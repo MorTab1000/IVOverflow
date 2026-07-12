@@ -168,12 +168,22 @@ flowchart LR
 
 `.github/workflows/ci.yml` runs on **push** and **pull_request** to `main` and `feature/*` branches.
 
-| Job      | Steps                                                    |
-| -------- | -------------------------------------------------------- |
-| `server` | `npm ci` → `npm run lint` → `npm run build` in `server/` |
-| `client` | `npm ci` → `npm run lint` → `npm run build` in `client/` |
+| Job      | Steps                                                                 |
+| -------- | --------------------------------------------------------------------- |
+| `server` | `npm ci` → `prisma generate` → `lint` → `test` → `build` in `server/` |
+| `client` | `npm ci` → `npm run lint` → `npm run build` in `client/`              |
 
-CI validates code integrity at each stage without requiring a running database (Prisma `generate` only; no `migrate` in CI).
+CI validates code integrity at each stage without requiring a running database (Prisma `generate` only; no `migrate` in CI). Stage 1 API tests mock Prisma so they run offline in CI.
+
+## Testing (Server)
+
+| Tool         | Role                                                |
+| ------------ | --------------------------------------------------- |
+| Vitest       | Test runner (`npm test` in `server/`)               |
+| Supertest    | HTTP assertions against Express app                 |
+| Prisma mocks | `vi.mock` in `tests/setup.ts` — no live DB required |
+
+Test files: `server/tests/auth.test.ts`, `server/tests/questions.test.ts`, `server/tests/health.test.ts`
 
 ## Pre-commit Hooks
 

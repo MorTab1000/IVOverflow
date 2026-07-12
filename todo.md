@@ -59,6 +59,7 @@
 - [x] `POST /createQuestion` — create question with title, body, tags
 - [x] `GET /getQuestions` — list all questions (with author, tags)
 - [x] `GET /getQuestionAnswer` — get single question by ID (answers array empty until Stage 2)
+- [x] Stage 1 API tests — Vitest + Supertest (`server/tests/`) with mocked Prisma; wired into CI (`npm test`)
 
 ### Frontend
 
