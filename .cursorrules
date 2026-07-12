@@ -1,0 +1,70 @@
+# IVOverflow — Cursor Rules
+
+## Project
+
+IVOverflow is a developer Q&A platform (interview assignment). Stack Overflow–style: questions with code snippets, answers, and voting.
+
+## Tech Stack (fixed by assignment)
+
+- **Frontend:** ReactJS, Redux Toolkit, Redux Query (RTK Query)
+- **Backend:** Node.js, Express
+- **ORM:** Mongoose or Prisma (TBD)
+- **Database:** PostgreSQL or MongoDB (TBD)
+- **Auth:** JWT, 1-hour expiration, required on all API calls
+
+## Architecture
+
+- Monorepo: `client/` (React) + `server/` (Express)
+- REST API — see `architecture.md` for endpoint list
+- JWT middleware on all protected routes
+- Passwords stored as SHA-512 hashes
+
+## Coding Standards
+
+### TypeScript
+
+- Use TypeScript for both client and server
+- Prefer explicit types over `any`
+- Use interfaces for API request/response shapes
+
+### Backend
+
+- Routes in `server/src/routes/`
+- Business logic in services or route handlers (keep thin)
+- JWT auth middleware applied before protected handlers
+- Parameterized queries / ORM — no raw string concatenation for SQL
+- Return consistent JSON: `{ data }` on success, `{ error: string }` on failure
+- HTTP status codes: 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Server Error
+
+### Frontend
+
+- Pages in `client/src/pages/`
+- Reusable UI in `client/src/components/`
+- Redux store in `client/src/store/`
+- RTK Query for all API calls — attach JWT via `prepareHeaders`
+- Protected routes redirect unauthenticated users to `/login`
+
+### Naming
+
+- Files: `kebab-case` for routes/pages, `PascalCase` for React components
+- API endpoints: camelCase per assignment (`/getQuestions`, `/createQuestion`)
+- Database: `snake_case` columns if Postgres, camelCase if MongoDB
+
+### Git
+
+- Meaningful commit messages (imperative mood: "Add login page", "Fix vote count")
+- One logical change per commit
+- Do not commit `.env`, secrets, or `node_modules`
+
+## Constraints
+
+- Do not change the required tech stack without documenting the reason in `architecture.md`
+- All API communication must include JWT (except `/login`)
+- Users are hardcoded/seeded — no registration flow required
+- Tags are strings stored on the question document/row — no separate tags table required unless we decide otherwise
+
+## Reference Files
+
+- `architecture.md` — system design, diagrams, open decisions
+- `todo.md` — staged development checklist
+- `AGENT.md` — architect role and brainstorming process

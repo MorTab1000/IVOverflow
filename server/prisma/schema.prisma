@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(uuid())
+  nickname     String
+  fullName     String     @map("full_name")
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  questions    Question[]
+  answers      Answer[]
+  votes        Vote[]
+
+  @@map("users")
+}
+
+model Question {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  body      String
+  tags      String[]
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id])
+  answers   Answer[]
+
+  @@map("questions")
+}
+
+model Answer {
+  id         String   @id @default(uuid())
+  questionId String   @map("question_id")
+  userId     String   @map("user_id")
+  body       String
+  createdAt  DateTime @default(now()) @map("created_at")
+  question   Question @relation(fields: [questionId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+  votes      Vote[]
+
+  @@map("answers")
+}
+
+model Vote {
+  id       String @id @default(uuid())
+  answerId String @map("answer_id")
+  userId   String @map("user_id")
+  value    Int
+  answer   Answer @relation(fields: [answerId], references: [id])
+  user     User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, answerId])
+  @@map("votes")
+}
