@@ -1,11 +1,7 @@
-import { createHash } from "crypto";
 import { PrismaClient } from "@prisma/client";
+import { hashPassword } from "../src/utils/password";
 
 const prisma = new PrismaClient();
-
-function sha512(password: string): string {
-  return createHash("sha512").update(password).digest("hex");
-}
 
 const users = [
   {
@@ -37,7 +33,7 @@ async function main() {
         nickname: user.nickname,
         fullName: user.fullName,
         email: user.email,
-        passwordHash: sha512(user.password),
+        passwordHash: hashPassword(user.password),
       },
     });
   }
