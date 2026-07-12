@@ -1,7 +1,8 @@
 # IVOverflow — Development Todo
 
 > Broken down from the assignment PDF (3 stages + infrastructure)  
-> Mapped to Git Flow feature branches
+> Mapped to Git Flow feature branches  
+> **Keep this file updated** — mark tasks `[x]` immediately after completion.
 
 ## Git Flow Strategy
 
@@ -18,19 +19,21 @@
 
 ## Phase 0: Project Setup
 
-> Completed on `feature/stage-1-auth-questions`
+> On branch `feature/stage-1-auth-questions`
 
-- [ ] Initialize git repo and `main` branch
-- [ ] Create `feature/stage-1-auth-questions` branch
-- [ ] Initialize monorepo structure (`client/` + `server/`)
-- [ ] Add root `docker-compose.yml` (PostgreSQL only)
-- [ ] Scaffold Express server with TypeScript
+- [x] Initialize git repo and `main` branch
+- [x] Create `feature/stage-1-auth-questions` branch
+- [x] Initialize monorepo structure (`client/` + `server/`)
+- [x] Add root `docker-compose.yml` (PostgreSQL only)
+- [x] Scaffold Express server with TypeScript
 - [ ] Scaffold React app with Redux Toolkit + RTK Query
-- [ ] Create Prisma schema (User, Question, Answer, Vote)
-- [ ] Set up JWT auth utilities (sign, verify, 1h expiry)
-- [ ] Configure CORS and environment variables
-- [ ] Add `.github/workflows/ci.yml` (lint + build on push/PR)
+- [x] Create Prisma schema (User, Question, Answer, Vote)
+- [x] Set up JWT auth utilities (sign, verify, 1h expiry)
+- [x] Configure CORS and environment variables
+- [x] Add `.github/workflows/ci.yml` (lint + build on push/PR)
 - [x] Husky + lint-staged pre-commit hook (Prettier + ESLint on staged files)
+- [x] ESLint deps in `server/` and `client/` for CI (per-package install)
+- [x] `server/tsconfig.eslint.json` — ESLint coverage for `prisma/seed.ts`
 
 ---
 
@@ -40,20 +43,22 @@
 
 ### Infrastructure & DevOps
 
-- [ ] `docker-compose.yml` — PostgreSQL only (`postgres:16-alpine`); backend and frontend run locally
-- [ ] Configure Prisma `DATABASE_URL` in `server/.env` → Docker Postgres (`localhost:5432`)
-- [ ] `.github/workflows/ci.yml` — trigger on push/PR to `main` and feature branches; run `npm install`, lint, and build for both `client/` and `server/`
+- [x] `docker-compose.yml` — PostgreSQL only (`postgres:16-alpine`); backend and frontend run locally
+- [x] Configure Prisma `DATABASE_URL` in `server/.env` → Docker Postgres (`localhost:5432`)
+- [x] `.github/workflows/ci.yml` — trigger on push/PR to `main` and feature branches; run `npm install`, lint, and build for both `client/` and `server/`
 
 ### Backend
 
-- [ ] `server/prisma/schema.prisma` — User, Question models (Answer/Vote stubs for later stages)
-- [ ] `npx prisma migrate dev` — apply schema to Docker database
-- [ ] `server/prisma/seed.ts` — seed hardcoded users (nickname, full name, email, SHA-512 hashed passwords); wire `prisma db seed`
-- [ ] `POST /login` — authenticate, return JWT
-- [ ] `GET /userInfo` — validate JWT, return user profile
-- [ ] `POST /createQuestion` — create question with title, body, tags
-- [ ] `GET /getQuestions` — list all questions (with author, tags)
-- [ ] `GET /getQuestionAnswer` — get single question by ID (answers array empty until Stage 2)
+- [x] `server/prisma/schema.prisma` — User, Question, Answer, Vote models
+- [x] `npx prisma migrate dev` — apply schema to Docker database
+- [x] `server/prisma/seed.ts` — seed hardcoded users (nickname, full name, email, SHA-512 hashed passwords); wire `prisma db seed`
+- [x] `server/src/utils/password.ts` — shared SHA-512 hash/verify (used by seed + login)
+- [x] `server/src/middleware/auth.ts` — JWT Bearer auth middleware
+- [x] `POST /login` — authenticate, return JWT
+- [x] `GET /userInfo` — validate JWT, return user profile
+- [x] `POST /createQuestion` — create question with title, body, tags
+- [x] `GET /getQuestions` — list all questions (with author, tags)
+- [x] `GET /getQuestionAnswer` — get single question by ID (answers array empty until Stage 2)
 
 ### Frontend
 
@@ -67,12 +72,12 @@
 
 ### Acceptance
 
-- [ ] `docker compose up -d` starts Postgres; `prisma migrate` + `prisma db seed` succeed
+- [x] `docker compose up -d` starts Postgres; `prisma migrate` + `prisma db seed` succeed
 - [ ] CI pipeline passes on PR
-- [ ] User can log in with seeded credentials
-- [ ] JWT is sent on all API requests
-- [ ] User can create a question with tags
-- [ ] Questions appear on list and detail pages
+- [x] User can log in with seeded credentials (API verified)
+- [ ] JWT is sent on all API requests (backend ready; pending frontend)
+- [x] User can create a question with tags (API verified)
+- [ ] Questions appear on list and detail pages (pending frontend)
 
 ---
 
@@ -82,7 +87,7 @@
 
 ### Backend
 
-- [ ] Extend Prisma schema — Answer model + relations
+- [x] Extend Prisma schema — Answer model + relations (schema exists; endpoint pending)
 - [ ] `POST /answer` — submit answer to a question (questionId, body)
 - [ ] Update `GET /getQuestionAnswer` — include answers (unordered until Stage 3)
 
@@ -107,7 +112,7 @@
 
 ### Backend
 
-- [ ] Extend Prisma schema — Vote model with `@@unique([userId, answerId])`
+- [x] Extend Prisma schema — Vote model with `@@unique([userId, answerId])` (schema exists; endpoints pending)
 - [ ] `POST /vote` — upvote (+1) or downvote (-1); upsert on re-vote
 - [ ] `GET /getVotes` — get vote counts per answer
 - [ ] Update `GET /getQuestionAnswer` — return answers sorted by vote score (desc), `createdAt` tiebreaker
