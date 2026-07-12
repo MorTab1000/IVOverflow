@@ -146,23 +146,13 @@ sequenceDiagram
 ## Git Flow
 
 ```mermaid
-gitGraph
-    commit id: "init"
-    branch feature/stage-1-auth-questions
-    checkout feature/stage-1-auth-questions
-    commit id: "stage-1: auth + questions"
-    checkout main
-    merge feature/stage-1-auth-questions id: "merge stage 1"
-    branch feature/stage-2-answers
-    checkout feature/stage-2-answers
-    commit id: "stage-2: answers"
-    checkout main
-    merge feature/stage-2-answers id: "merge stage 2"
-    branch feature/stage-3-voting
-    checkout feature/stage-3-voting
-    commit id: "stage-3: voting"
-    checkout main
-    merge feature/stage-3-voting id: "merge stage 3"
+flowchart LR
+    init["main: init"] --> s1["feature/stage-1-auth-questions"]
+    s1 -->|"PR + CI"| m1["main: stage 1 merged"]
+    m1 --> s2["feature/stage-2-answers"]
+    s2 -->|"PR + CI"| m2["main: stage 2 merged"]
+    m2 --> s3["feature/stage-3-voting"]
+    s3 -->|"PR + CI"| m3["main: stage 3 merged"]
 ```
 
 | Branch                           | Scope                                                                               |
