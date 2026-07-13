@@ -93,24 +93,27 @@
 
 **Branch:** `feature/stage-2-answers`
 
+> Backend DB/API blueprint: see **Stage 2 Backend Blueprint** in `architecture.md` (approved design before implementation).
+
 ### Backend
 
-- [x] Extend Prisma schema — Answer model + relations (schema exists; endpoint pending)
-- [ ] `POST /answer` — submit answer to a question (questionId, body)
-- [ ] Update `GET /getQuestionAnswer` — include answers (unordered until Stage 3)
+- [x] Extend Prisma schema — Answer model + relations (`User` ↔ `Answer` ↔ `Question`; already in init migration — **no new migrate for Stage 2**)
+- [x] `GET /getQuestionAnswer` — already returns `answers[]` with author, ordered by `createdAt asc` (vote-score sort deferred to Stage 3)
+- [x] `POST /answer` — JWT required; body `{ questionId, body }`; create Answer for `req.userId`; `201` → `{ data: { answer } }` with Author include; 400 if missing fields, 404 if question missing
+- [x] Stage 2 API tests — Vitest + Supertest for `POST /answer` (mock Prisma); cover 201 / 400 / 401 / 404
 
 ### Frontend
 
-- [ ] Answer form on question detail page
-- [ ] Display answers below the question
-- [ ] Submit answer → call `/answer`
-- [ ] Show answer author and timestamp
+- [x] Answer form on question detail page
+- [x] Display answers below the question
+- [x] Submit answer → call `/answer`
+- [x] Show answer author and timestamp
 
 ### Acceptance
 
-- [ ] CI pipeline passes on PR
-- [ ] Logged-in user can submit an answer on a question page
-- [ ] Answers persist and display on reload
+- [x] CI pipeline passes on PR
+- [x] Logged-in user can submit an answer on a question page
+- [x] Answers persist and display on reload
 
 ---
 
@@ -143,7 +146,7 @@
 
 ## Polish & Extras (optional)
 
-- [ ] Code syntax highlighting in questions/answers
+- [ ] Code syntax highlighting in questions/answers (**Prism.js** — locked in `architecture.md`; not started until Polish)
 - [ ] Tag filtering on questions list
 - [ ] Loading and error states in UI
 - [ ] Basic responsive layout

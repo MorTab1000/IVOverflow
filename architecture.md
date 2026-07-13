@@ -1,7 +1,7 @@
 # IVOverflow — Architecture
 
 > **Status:** Approved — architectural decisions finalized  
-> **Last updated:** 2026-07-12
+> **Last updated:** 2026-07-13
 
 ## Overview
 
@@ -51,16 +51,16 @@ flowchart TB
 
 ## API Endpoints (recommended by assignment)
 
-| Method | Endpoint             | Auth | Purpose                                                       |
-| ------ | -------------------- | ---- | ------------------------------------------------------------- |
-| POST   | `/login`             | No   | Authenticate user, return JWT                                 |
-| GET    | `/userInfo`          | Yes  | Validate JWT, return user profile                             |
-| GET    | `/getQuestions`      | Yes  | List questions (with tags, author)                            |
-| POST   | `/createQuestion`    | Yes  | Create new question with tags                                 |
-| GET    | `/getQuestionAnswer` | Yes  | Get single question + answers **sorted by vote score (desc)** |
-| POST   | `/answer`            | Yes  | Submit answer to a question                                   |
-| POST   | `/vote`              | Yes  | Upvote/downvote an answer                                     |
-| GET    | `/getVotes`          | Yes  | Get vote counts for answers                                   |
+| Method | Endpoint             | Auth | Purpose                                                                              |
+| ------ | -------------------- | ---- | ------------------------------------------------------------------------------------ |
+| POST   | `/login`             | No   | Authenticate user, return JWT                                                        |
+| GET    | `/userInfo`          | Yes  | Validate JWT, return user profile                                                    |
+| GET    | `/getQuestions`      | Yes  | List questions (with tags, author)                                                   |
+| POST   | `/createQuestion`    | Yes  | Create new question with tags                                                        |
+| GET    | `/getQuestionAnswer` | Yes  | Get single question + answers (Stage 2: **createdAt asc**; Stage 3: vote score desc) |
+| POST   | `/answer`            | Yes  | Submit answer to a question                                                          |
+| POST   | `/vote`              | Yes  | Upvote/downvote an answer                                                            |
+| GET    | `/getVotes`          | Yes  | Get vote counts for answers                                                          |
 
 ## Data Model
 
@@ -136,16 +136,16 @@ sequenceDiagram
 
 ## Frontend Pages
 
-| Page            | Route            | Stage | Description                                              |
-| --------------- | ---------------- | ----- | -------------------------------------------------------- |
-| Login           | `/login`         | 1     | Email/password form                                      |
-| Questions List  | `/`              | 1     | Browse all questions                                     |
-| Ask Question    | _modal on `/`_   | 1     | Overlay form: title, body, tags — not a standalone route |
-| Question Detail | `/questions/:id` | 1–3   | Question + answers + vote UI                             |
+| Page            | Route            | Stage | Description                                                 |
+| --------------- | ---------------- | ----- | ----------------------------------------------------------- |
+| Login           | `/login`         | 1     | Email/password form                                         |
+| Questions List  | `/`              | 1     | Browse all questions                                        |
+| Ask Question    | _modal on `/`_   | 1     | Overlay form: title, body, tags — not a standalone route    |
+| Question Detail | `/questions/:id` | 1–2   | Question + answers list + answer form; voting UI in Stage 3 |
 
 ## Frontend Architecture
 
-> Scope: Stage 1 (auth + questions). Answer/voting UI (Stage 2–3) plugs into the same structure without refactoring.
+> Scope: Stages 1–2 (auth, questions, answers). Voting UI (Stage 3) plugs into the same structure without refactoring.
 
 ### Folder Structure (`client/src`)
 
@@ -161,7 +161,8 @@ client/src/
 ├── api/                          # RTK Query layer (the only place that calls fetch)
 │   ├── baseApi.ts                # createApi base: baseUrl "/api", prepareHeaders (JWT), 401 handling
 │   ├── authApi.ts                # injectEndpoints: login, userInfo
-│   └── questionsApi.ts           # injectEndpoints: getQuestions, createQuestion, getQuestionAnswer
+│   ├── questionsApi.ts           # injectEndpoints: getQuestions, createQuestion, getQuestionAnswer
+│   └── answersApi.ts             # injectEndpoints: createAnswer (invalidates Question by id)
 ├── features/
 │   └── auth/
 │       └── authSlice.ts          # { token, user } + setCredentials/logout, syncs to localStorage
@@ -172,39 +173,45 @@ client/src/
 │   │   ├── TextArea.tsx
 │   │   └── Modal.tsx
 │   ├── layout/
-│   │   ├── AppHeader.tsx         # logo, search (visual only in Stage 1), Ask question, logout
-│   │   └── ProtectedRoute.tsx    # redirects to /login if not authenticated
+│   │   ├── AppHeader.tsx         # logo, search (visual only), Ask question, logout
+│   │   └── ProtectedRoute.tsx    # redirects to /login if not authenticated; owns Ask Question modal
 │   ├── auth/
 │   │   └── LoginForm.tsx
-│   └── questions/
-│       ├── QuestionList.tsx
-│       ├── QuestionListItem.tsx
-│       ├── TagBadge.tsx
-│       ├── AskQuestionModal.tsx
-│       └── AskQuestionForm.tsx
+│   ├── questions/
+│   │   ├── QuestionList.tsx
+│   │   ├── QuestionListItem.tsx
+│   │   ├── TagBadge.tsx
+│   │   ├── AskQuestionModal.tsx
+│   │   └── AskQuestionForm.tsx
+│   └── answers/
+│       ├── AnswerList.tsx
+│       ├── AnswerListItem.tsx
+│       └── AnswerForm.tsx
 ├── pages/                        # kebab-case files (route-level), one per route
 │   ├── login-page.tsx
 │   ├── questions-page.tsx
-│   └── question-detail-page.tsx
+│   └── question-detail-page.tsx  # question + answers list + answer form
 ├── types/                        # shared contracts with the backend (see below)
 │   ├── user.ts
 │   ├── question.ts
-│   ├── answer.ts                 # defined now (backend already returns it); unused until Stage 2
+│   ├── answer.ts                 # Answer + CreateAnswerRequest/Response
 │   ├── auth.ts
 │   └── api.ts                    # ApiSuccess<T> / ApiError envelope
 └── utils/
-    └── format-date.ts            # "asked <date>" / "answered <date>" formatting
+    ├── format-date.ts            # "asked <date>" / "answered <date>" formatting
+    └── get-error-message.ts      # extract `{ error }` from RTK Query failures
 ```
 
 **Notes**
 
 - `api/` uses RTK Query exclusively — no component calls `fetch`/`axios` directly.
-- `features/auth/authSlice.ts` is the **only** slice needed for Stage 1 (no server data is duplicated in plain Redux state — RTK Query owns the questions cache).
+- `features/auth/authSlice.ts` is the **only** plain Redux slice (RTK Query owns questions/answers cache).
 - Naming follows `.cursorrules`: `kebab-case` for `pages/`, `PascalCase` for components in `components/`.
+- `createAnswer` invalidates `{ type: "Question", id: questionId }` so the active `getQuestionAnswer` query refetches — no full page reload.
 
 ### TypeScript Interfaces (Backend ↔ Frontend Contract)
 
-These mirror the exact JSON shapes returned by `server/src/routes/auth.ts` and `server/src/routes/questions.ts` today, so the two sides can't drift silently.
+These mirror the exact JSON shapes returned by the Express routes so the two sides can't drift silently.
 
 ```typescript
 // types/api.ts — matches .cursorrules response envelope
@@ -241,7 +248,7 @@ export interface Question {
   user: Author;
 }
 
-// types/answer.ts — Stage 2 model, typed now to match GET /getQuestionAnswer today
+// types/answer.ts
 export interface Answer {
   id: string;
   questionId: string;
@@ -249,6 +256,13 @@ export interface Answer {
   body: string;
   createdAt: string;
   user: Author;
+}
+export interface CreateAnswerRequest {
+  questionId: string;
+  body: string;
+}
+export interface CreateAnswerResponse {
+  answer: Answer;
 }
 
 // types/auth.ts
@@ -270,7 +284,7 @@ export interface CreateQuestionResponse {
 }
 export interface GetQuestionAnswerResponse {
   question: Question;
-  answers: Answer[]; // empty array until Stage 2
+  answers: Answer[];
 }
 ```
 
@@ -278,21 +292,24 @@ RTK Query endpoints use `transformResponse: (res: ApiSuccess<T>) => res.data` so
 
 ### Component Breakdown & State Flow
 
-| Component                                     | Type  | Responsibility                                                                                                                              |
-| --------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `App.tsx`                                     | Smart | Router only; renders `/login` and `ProtectedRoute`-wrapped app routes                                                                       |
-| `ProtectedRoute`                              | Smart | Reads `state.auth.token` via `useAppSelector`; redirects to `/login` if absent                                                              |
-| `AppHeader`                                   | Smart | Reads current user; dispatches `logout()`; opens Ask Question modal                                                                         |
-| `login-page.tsx`                              | Smart | Calls `useLoginMutation`; on success dispatches `setCredentials`, navigates `/`                                                             |
-| `LoginForm`                                   | Dumb  | Controlled email/password inputs; `onSubmit(email, password)`; shows passed-in error/loading                                                |
-| `questions-page.tsx`                          | Smart | Calls `useGetQuestionsQuery` + `useCreateQuestionMutation`; owns modal open/close local state                                               |
-| `QuestionList`                                | Dumb  | Maps `Question[]` → `QuestionListItem`                                                                                                      |
-| `QuestionListItem`                            | Dumb  | Renders title/body excerpt/tags/author/date; `<Link>` to detail page. **No vote/answer counts in Stage 1** (not yet available from the API) |
-| `TagBadge`                                    | Dumb  | Single tag pill                                                                                                                             |
-| `AskQuestionModal`                            | Dumb  | Wraps `Modal` + `AskQuestionForm`; `open`/`onClose` props                                                                                   |
-| `AskQuestionForm`                             | Dumb  | Title/body/tags(comma-separated) inputs; `onSubmit(payload)`                                                                                |
-| `question-detail-page.tsx`                    | Smart | Calls `useGetQuestionAnswerQuery(id)` via `useParams`; renders question content + metadata only (answers UI arrives in Stage 2)             |
-| `Button` / `TextField` / `TextArea` / `Modal` | Dumb  | Store-agnostic UI primitives, fully prop-driven                                                                                             |
+| Component                                     | Type  | Responsibility                                                                                                            |
+| --------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------- |
+| `App.tsx`                                     | Smart | Router only; renders `/login` and `ProtectedRoute`-wrapped app routes                                                     |
+| `ProtectedRoute`                              | Smart | Reads `state.auth.token`; redirects to `/login` if absent; owns Ask Question modal + `createQuestion`                     |
+| `AppHeader`                                   | Smart | Reads current user; dispatches `logout()`; opens Ask Question modal                                                       |
+| `login-page.tsx`                              | Smart | Calls `useLoginMutation`; on success dispatches `setCredentials`, navigates `/`                                           |
+| `LoginForm`                                   | Dumb  | Controlled email/password inputs; `onSubmit(email, password)`; shows passed-in error/loading                              |
+| `questions-page.tsx`                          | Smart | Calls `useGetQuestionsQuery`; renders `QuestionList`                                                                      |
+| `QuestionList`                                | Dumb  | Maps `Question[]` → `QuestionListItem`                                                                                    |
+| `QuestionListItem`                            | Dumb  | Renders title/body excerpt/tags/author/date; `<Link>` to detail page. **No vote/answer counts** (Stage 3+)                |
+| `TagBadge`                                    | Dumb  | Single tag pill                                                                                                           |
+| `AskQuestionModal`                            | Dumb  | Wraps `Modal` + `AskQuestionForm`; `open`/`onClose` props                                                                 |
+| `AskQuestionForm`                             | Dumb  | Title/body/tags(comma-separated) inputs; `onSubmit(payload)`                                                              |
+| `question-detail-page.tsx`                    | Smart | `useGetQuestionAnswerQuery` + `useCreateAnswerMutation`; owns `formKey` / submit error; wires `AnswerList` + `AnswerForm` |
+| `AnswerList`                                  | Dumb  | Renders `Answer[]` or empty state                                                                                         |
+| `AnswerListItem`                              | Dumb  | Answer body + author/timestamp (**no vote UI** until Stage 3)                                                             |
+| `AnswerForm`                                  | Dumb  | Body textarea; `onSubmit({ body })`; shows passed-in error/loading; remounted via `key={formKey}` after success           |
+| `Button` / `TextField` / `TextArea` / `Modal` | Dumb  | Store-agnostic UI primitives, fully prop-driven                                                                           |
 
 ```mermaid
 flowchart TD
@@ -311,10 +328,13 @@ flowchart TD
     QuestionsPage --> QuestionList
     QuestionList --> QuestionListItem
     QuestionListItem --> TagBadge
-    QuestionsPage --> AskQuestionModal
+    Protected --> AskQuestionModal
     AskQuestionModal --> AskQuestionForm
 
     DetailRoute --> QuestionDetailPage[question-detail-page.tsx]
+    QuestionDetailPage --> AnswerList
+    AnswerList --> AnswerListItem
+    QuestionDetailPage --> AnswerForm
 ```
 
 **Token flow (login → authenticated request → expiry):**
@@ -461,10 +481,12 @@ IVOverflow/
 
 ### Server-side answer ordering
 
-`GET /getQuestionAnswer` returns answers **sorted by vote score descending** (highest first). The server computes score per answer and applies `ORDER BY score DESC, createdAt ASC` as a tiebreaker.
+**Stage 2 (current):** `GET /getQuestionAnswer` returns answers sorted by **`createdAt ASC`** (oldest first). No vote scores are computed yet.
+
+**Stage 3 (planned):** The same endpoint will switch to **vote score descending** (highest first), with `createdAt ASC` as a tiebreaker:
 
 ```sql
--- Conceptual query shape
+-- Conceptual query shape (Stage 3)
 SELECT answer.*, COALESCE(SUM(vote.value), 0) AS score
 FROM answers
 LEFT JOIN votes ON votes.answer_id = answers.id
@@ -473,7 +495,7 @@ GROUP BY answers.id
 ORDER BY score DESC, answers.created_at ASC
 ```
 
-The frontend does **not** re-sort answers — ordering is guaranteed by the API.
+The frontend does **not** re-sort answers — ordering is guaranteed by the API for whichever stage is active.
 
 ### Vote constraint
 
@@ -489,13 +511,75 @@ The frontend does **not** re-sort answers — ordering is guaranteed by the API.
 - [x] **Git Flow:** Feature branches per stage, PR + CI before merge
 - [x] **CI:** GitHub Actions — lint + build on push/PR
 - [x] **Vote constraint:** `@@unique([userId, answerId])` — one vote per user per answer
-- [x] **Answer ordering:** Server returns answers sorted by vote score (desc)
+- [x] **Answer ordering:** Stage 2 — `createdAt ASC`; Stage 3 — vote score (desc) with `createdAt` tiebreaker
 - [x] **JWT storage:** `localStorage` — backend returns the token in the JSON body (no `Set-Cookie`), so the client must persist it itself; `localStorage` keeps the session alive across refreshes with no refresh-token endpoint to otherwise restore it
 - [x] **Frontend styling:** CSS Modules (`*.module.css`) co-located per component — zero extra dependencies, scoped class names, matches the plain wireframe aesthetic
+- [x] **Syntax highlighting:** **Prism.js** — deferred to Polish & Extras; Stages 1–3 keep plain textareas / unhighlighted `<pre>` for question and answer bodies
 
 ## Open Decisions
 
-- [ ] Code snippet rendering library (e.g., Prism, highlight.js) — deferred to Polish & Extras; Stage 1 uses a plain textarea for question body
+_None — all architectural choices for Stages 1–3 are locked. Remaining polish items live under Polish & Extras in `todo.md`._
+
+## Stage 2 Backend Blueprint (Answers)
+
+Stage 2 is **shipped** on `feature/stage-2-answers`: `POST /answer`, answer UI on the question detail page, and `GET /getQuestionAnswer` returning answers with embedded `Author`. Answer ordering remains **`createdAt ASC`** until Stage 3 adds vote-score sorting.
+
+### Prisma relations (already in `schema.prisma`)
+
+```text
+User 1 ──* Question   (User.questions / Question.user)
+User 1 ──* Answer     (User.answers / Answer.user)
+Question 1 ──* Answer (Question.answers / Answer.question)
+Answer 1 ──* Vote     (present; unused until Stage 3)
+```
+
+| Model      | FK fields                                          | Relation fields                                            |
+| ---------- | -------------------------------------------------- | ---------------------------------------------------------- |
+| `User`     | —                                                  | `questions Question[]`, `answers Answer[]`, `votes Vote[]` |
+| `Question` | `userId` → `User.id`                               | `user User`, `answers Answer[]`                            |
+| `Answer`   | `questionId` → `Question.id`, `userId` → `User.id` | `question Question`, `user User`, `votes Vote[]`           |
+
+`Answer` columns: `id` (uuid PK), `questionId`, `userId`, `body` (text), `createdAt` (default now). Tables mapped to `snake_case` (`answers`, `question_id`, etc.).
+
+### Migration step
+
+- **No new Prisma migration required** for Stage 2 — `Answer` (and `Vote`) were created in the Stage 1 init migration (`20260712183751_init`).
+- Local verify before coding endpoints: `docker compose up -d` → `npx prisma migrate status` (should report applied) → optional `npx prisma db seed` if the DB was wiped.
+- If a fresh environment lacks the init migration applied, run `npx prisma migrate dev` once; do **not** invent a second Answer-only migration.
+
+### `POST /answer` contract
+
+| Item           | Spec                                                                                                                              |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Method/path    | `POST /answer`                                                                                                                    |
+| Auth           | Required — JWT Bearer (`authMiddleware`); author = `req.userId`                                                                   |
+| Request body   | `{ "questionId": string, "body": string }`                                                                                        |
+| Success        | `201 Created` → `{ data: { answer: Answer } }`                                                                                    |
+| `Answer` shape | Same as `types/answer.ts`: `id`, `questionId`, `userId`, `body`, `createdAt` (ISO), `user: Author` (`id`, `nickname`, `fullName`) |
+
+**Validation / errors**
+
+| Condition                            | Status | Body                                            |
+| ------------------------------------ | ------ | ----------------------------------------------- |
+| Missing/blank `questionId` or `body` | 400    | `{ error: "questionId and body are required" }` |
+| Question id does not exist           | 404    | `{ error: "Question not found" }`               |
+| Missing/invalid JWT                  | 401    | `{ error: ... }` (existing middleware)          |
+| Unexpected failure                   | 500    | `{ error: string }`                             |
+
+**Handler behavior**
+
+1. Validate `questionId` + non-empty trimmed `body`.
+2. Confirm question exists (`findUnique` / `findFirst`).
+3. `prisma.answer.create` with `userId: req.userId`, include `user: { select: authorSelect }` (same author select as questions routes).
+4. Return `201` with `{ data: { answer } }`.
+
+### `GET /getQuestionAnswer` (Stage 2 contract)
+
+Returns `{ data: { question, answers } }` with each answer including `user` (Author).
+
+**Answer ordering in Stage 2:** `createdAt ASC` (oldest first). This is the active contract while voting is not yet implemented.
+
+**Stage 3 enhancement:** The same endpoint will reorder answers by **vote score descending**, using `createdAt ASC` as a tiebreaker. The frontend will continue to render answers in server-provided order without client-side re-sorting.
 
 ## Security Notes
 

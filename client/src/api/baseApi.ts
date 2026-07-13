@@ -45,6 +45,6 @@ export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithAuthHandling,
   tagTypes: ["Question"],
-  // Real endpoints are added via `.injectEndpoints` in authApi.ts / questionsApi.ts
+  // Real endpoints are added via `.injectEndpoints` in authApi.ts / questionsApi.ts / answersApi.ts
   endpoints: () => ({}),
 });
