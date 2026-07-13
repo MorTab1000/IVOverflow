@@ -1,10 +1,12 @@
 .header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.75rem 1.5rem;
   padding: 0.75rem 1.5rem;
   border-bottom: 1px solid #e0e0e0;
   background-color: #fff;
+  min-width: 0;
 }
 
 .brand {
@@ -43,7 +45,8 @@
 }
 
 .search {
-  flex: 1;
+  flex: 1 1 12rem;
+  min-width: 0;
   max-width: 420px;
   padding: 0.5rem 0.75rem;
   border: 1px solid #c4c4c4;
@@ -62,9 +65,11 @@
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem 1rem;
   margin-left: auto;
+  min-width: 0;
 }
 
 .askButton {
@@ -74,6 +79,9 @@
 .userName {
   font-size: 0.9rem;
   color: #444;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -90,4 +98,28 @@
 
 .logoutButton:hover {
   color: #1a1a1a;
+}
+
+@media (max-width: 640px) {
+  .header {
+    padding: 0.75rem 1rem;
+  }
+
+  .brandText {
+    font-size: 1rem;
+  }
+
+  .search {
+    flex: 1 1 100%;
+    max-width: none;
+    order: 3;
+  }
+
+  .actions {
+    margin-left: 0;
+  }
+
+  .userName {
+    max-width: 7rem;
+  }
 }

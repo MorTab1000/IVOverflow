@@ -23,12 +23,12 @@ export default function TextArea({
         {label}
       </label>
       <textarea
+        {...rest}
         id={textareaId}
         className={styles.textarea}
         rows={rows}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${textareaId}-error` : undefined}
-        {...rest}
       />
       {error && (
         <p id={`${textareaId}-error`} className={styles.error}>

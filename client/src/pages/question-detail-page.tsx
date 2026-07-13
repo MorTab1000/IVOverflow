@@ -7,6 +7,7 @@ import AnswerForm from "../components/answers/AnswerForm";
 import type { AnswerFormSubmitValues } from "../components/answers/AnswerForm";
 import AnswerList from "../components/answers/AnswerList";
 import TagBadge from "../components/questions/TagBadge";
+import RichBody from "../components/content/RichBody";
 import { formatDate } from "../utils/format-date";
 import { getApiErrorMessage } from "../utils/get-error-message";
 import styles from "./question-detail-page.module.css";
@@ -18,7 +19,7 @@ export default function QuestionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, isError } = useGetQuestionAnswerQuery(id ?? "", { skip: !id });
   const [createAnswer, { isLoading: isSubmitting }] = useCreateAnswerMutation();
-  const [vote] = useVoteMutation();
+  const [vote, { isLoading: isVoting }] = useVoteMutation();
   const [formKey, setFormKey] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [voteError, setVoteError] = useState<string | null>(null);
@@ -82,7 +83,7 @@ export default function QuestionDetailPage() {
 
         <hr className={styles.divider} />
 
-        <p className={styles.body}>{question.body}</p>
+        <RichBody text={question.body} className={styles.body} />
 
         {question.tags.length > 0 && (
           <ul className={styles.tags}>
@@ -100,7 +101,7 @@ export default function QuestionDetailPage() {
           {answers.length === 1 ? "1 Answer" : `${answers.length} Answers`}
         </h2>
         {voteError && <p className={styles.statusError}>{voteError}</p>}
-        <AnswerList answers={answers} onVote={handleVote} />
+        <AnswerList answers={answers} onVote={handleVote} isVoting={isVoting} />
       </section>
 
       <section className={styles.answerFormSection} aria-labelledby="answer-form-heading">

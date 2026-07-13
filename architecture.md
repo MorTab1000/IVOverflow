@@ -141,7 +141,7 @@ sequenceDiagram
 | Login           | `/login`         | 1     | Email/password form                                                                              |
 | Questions List  | `/`              | 1     | Browse all questions                                                                             |
 | Ask Question    | _global modal_   | 1     | Owned by `ProtectedRoute.tsx` — available on all authenticated routes (`/` and `/questions/:id`) |
-| Question Detail | `/questions/:id` | 1–2   | Question + answers list + answer form; voting UI in Stage 3                                      |
+| Question Detail | `/questions/:id` | 1–3   | Question + answers + voting UI + answer form                                                     |
 
 ## Frontend Architecture
 
@@ -184,10 +184,12 @@ client/src/
 │   │   ├── TagBadge.tsx
 │   │   ├── AskQuestionModal.tsx
 │   │   └── AskQuestionForm.tsx
-│   └── answers/
-│       ├── AnswerList.tsx
-│       ├── AnswerListItem.tsx    # vote column (score + up/down) + body/meta
-│       └── AnswerForm.tsx
+│   ├── answers/
+│   │   ├── AnswerList.tsx
+│   │   ├── AnswerListItem.tsx    # vote column (score + up/down) + body/meta
+│   │   └── AnswerForm.tsx
+│   └── content/
+│       └── RichBody.tsx          # Prism.js fenced-code highlighting in bodies
 ├── pages/                        # kebab-case files (route-level), one per route
 │   ├── login-page.tsx
 │   ├── questions-page.tsx
@@ -532,7 +534,8 @@ The frontend does **not** re-sort answers — ordering is guaranteed by the API.
 - [x] **Vote cancel:** same `value` as existing vote deletes the row (`myVote` → `null`)
 - [x] **JWT storage:** `localStorage` — backend returns the token in the JSON body (no `Set-Cookie`), so the client must persist it itself; `localStorage` keeps the session alive across refreshes with no refresh-token endpoint to otherwise restore it
 - [x] **Frontend styling:** CSS Modules (`*.module.css`) co-located per component — zero extra dependencies, scoped class names, matches the plain wireframe aesthetic
-- [x] **Syntax highlighting:** **Prism.js** — deferred to Polish & Extras; Stages 1–3 keep plain textareas / unhighlighted `<pre>` for question and answer bodies
+- [x] **Syntax highlighting:** **Prism.js** — `RichBody` renders fenced ` ```lang ` blocks in question/answer bodies on the detail page
+- [x] **Vote UI concurrency:** vote buttons disabled while `useVoteMutation` `isLoading` (`isVoting`) to prevent double-submit races
 
 ## Open Decisions
 

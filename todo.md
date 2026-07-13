@@ -148,8 +148,8 @@
 
 ## Polish & Extras (optional)
 
-- [ ] Code syntax highlighting in questions/answers (**Prism.js** — locked in `architecture.md`; not started until Polish)
+- [x] Code syntax highlighting in questions/answers (**Prism.js** — `RichBody` on detail page)
 - [ ] Tag filtering on questions list
 - [ ] Loading and error states in UI
-- [ ] Basic responsive layout
+- [x] Basic responsive layout (header + list items wrap without horizontal scroll)
 - [ ] README with setup and run instructions

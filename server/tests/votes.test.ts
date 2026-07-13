@@ -170,6 +170,17 @@ describe("GET /getVotes", () => {
     expect(res.body).toEqual({ error: "questionId is required" });
   });
 
+  it("returns 400 when questionId is an array query param", async () => {
+    const res = await request(app)
+      .get("/getVotes")
+      .query({ questionId: ["a", "b"] })
+      .set(authHeader);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: "questionId is required" });
+    expect(mockedPrisma.question.findUnique).not.toHaveBeenCalled();
+  });
+
   it("returns 404 when question does not exist", async () => {
     mockedPrisma.question.findUnique.mockResolvedValue(null);
 

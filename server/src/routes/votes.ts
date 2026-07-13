@@ -83,9 +83,9 @@ router.post("/vote", async (req, res, next) => {
 
 router.get("/getVotes", async (req, res, next) => {
   try {
-    const questionId = req.query.questionId as string | undefined;
+    const questionId = req.query.questionId;
 
-    if (!questionId?.trim()) {
+    if (typeof questionId !== "string" || !questionId.trim()) {
       res.status(400).json({ error: "questionId is required" });
       return;
     }

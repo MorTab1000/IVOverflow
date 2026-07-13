@@ -5,9 +5,10 @@ import styles from "./AnswerList.module.css";
 export interface AnswerListProps {
   answers: AnswerWithVotes[];
   onVote: (answerId: string, value: 1 | -1) => void;
+  isVoting?: boolean;
 }
 
-export default function AnswerList({ answers, onVote }: AnswerListProps) {
+export default function AnswerList({ answers, onVote, isVoting = false }: AnswerListProps) {
   if (answers.length === 0) {
     return <p className={styles.empty}>No answers yet — be the first to reply!</p>;
   }
@@ -21,6 +22,7 @@ export default function AnswerList({ answers, onVote }: AnswerListProps) {
             score={answer.score}
             myVote={answer.myVote}
             onVote={(value) => onVote(answer.id, value)}
+            isVoting={isVoting}
           />
         </li>
       ))}

@@ -16,11 +16,11 @@ export default function TextField({ label, error, id, className, ...rest }: Text
         {label}
       </label>
       <input
+        {...rest}
         id={inputId}
         className={styles.input}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${inputId}-error` : undefined}
-        {...rest}
       />
       {error && (
         <p id={`${inputId}-error`} className={styles.error}>
