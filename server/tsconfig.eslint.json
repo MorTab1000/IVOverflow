@@ -2,7 +2,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "rootDir": ".",
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node"]
   },
   "include": ["src/**/*", "prisma/**/*.ts", "tests/**/*", "vitest.config.ts"],
   "exclude": ["node_modules", "dist"]
