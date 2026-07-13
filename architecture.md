@@ -1,7 +1,7 @@
 # IVOverflow — Architecture
 
 > **Status:** Approved — architectural decisions finalized  
-> **Last updated:** 2026-07-12
+> **Last updated:** 2026-07-13
 
 ## Overview
 
@@ -492,10 +492,68 @@ The frontend does **not** re-sort answers — ordering is guaranteed by the API.
 - [x] **Answer ordering:** Server returns answers sorted by vote score (desc)
 - [x] **JWT storage:** `localStorage` — backend returns the token in the JSON body (no `Set-Cookie`), so the client must persist it itself; `localStorage` keeps the session alive across refreshes with no refresh-token endpoint to otherwise restore it
 - [x] **Frontend styling:** CSS Modules (`*.module.css`) co-located per component — zero extra dependencies, scoped class names, matches the plain wireframe aesthetic
+- [x] **Syntax highlighting:** **Prism.js** — deferred to Polish & Extras; Stages 1–3 keep plain textareas / unhighlighted `<pre>` for question and answer bodies
 
 ## Open Decisions
 
-- [ ] Code snippet rendering library (e.g., Prism, highlight.js) — deferred to Polish & Extras; Stage 1 uses a plain textarea for question body
+_None — all architectural choices for Stages 1–3 are locked. Remaining polish items live under Polish & Extras in `todo.md`._
+
+## Stage 2 Backend Blueprint (Answers)
+
+> Design only — implementation starts after approval. Schema and `GET /getQuestionAnswer` already ship Answer support from Stage 1; Stage 2 adds `POST /answer` and wires the detail UI.
+
+### Prisma relations (already in `schema.prisma`)
+
+```
+User 1 ──* Question   (User.questions / Question.user)
+User 1 ──* Answer     (User.answers / Answer.user)
+Question 1 ──* Answer (Question.answers / Answer.question)
+Answer 1 ──* Vote     (present; unused until Stage 3)
+```
+
+| Model      | FK fields                                          | Relation fields                                            |
+| ---------- | -------------------------------------------------- | ---------------------------------------------------------- |
+| `User`     | —                                                  | `questions Question[]`, `answers Answer[]`, `votes Vote[]` |
+| `Question` | `userId` → `User.id`                               | `user User`, `answers Answer[]`                            |
+| `Answer`   | `questionId` → `Question.id`, `userId` → `User.id` | `question Question`, `user User`, `votes Vote[]`           |
+
+`Answer` columns: `id` (uuid PK), `questionId`, `userId`, `body` (text), `createdAt` (default now). Tables mapped to `snake_case` (`answers`, `question_id`, etc.).
+
+### Migration step
+
+- **No new Prisma migration required** for Stage 2 — `Answer` (and `Vote`) were created in the Stage 1 init migration (`20260712183751_init`).
+- Local verify before coding endpoints: `docker compose up -d` → `npx prisma migrate status` (should report applied) → optional `npx prisma db seed` if the DB was wiped.
+- If a fresh environment lacks the init migration applied, run `npx prisma migrate dev` once; do **not** invent a second Answer-only migration.
+
+### `POST /answer` contract
+
+| Item           | Spec                                                                                                                              |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Method/path    | `POST /answer`                                                                                                                    |
+| Auth           | Required — JWT Bearer (`authMiddleware`); author = `req.userId`                                                                   |
+| Request body   | `{ "questionId": string, "body": string }`                                                                                        |
+| Success        | `201 Created` → `{ data: { answer: Answer } }`                                                                                    |
+| `Answer` shape | Same as `types/answer.ts`: `id`, `questionId`, `userId`, `body`, `createdAt` (ISO), `user: Author` (`id`, `nickname`, `fullName`) |
+
+**Validation / errors**
+
+| Condition                            | Status | Body                                            |
+| ------------------------------------ | ------ | ----------------------------------------------- |
+| Missing/blank `questionId` or `body` | 400    | `{ error: "questionId and body are required" }` |
+| Question id does not exist           | 404    | `{ error: "Question not found" }`               |
+| Missing/invalid JWT                  | 401    | `{ error: ... }` (existing middleware)          |
+| Unexpected failure                   | 500    | `{ error: string }`                             |
+
+**Handler behavior (when implemented)**
+
+1. Validate `questionId` + non-empty trimmed `body`.
+2. Confirm question exists (`findUnique` / `findFirst`).
+3. `prisma.answer.create` with `userId: req.userId`, include `user: { select: authorSelect }` (same author select as questions routes).
+4. Return `201` with `{ data: { answer } }`.
+
+### `GET /getQuestionAnswer` (Stage 2 expectation)
+
+Already returns `{ data: { question, answers } }` with answers ordered by `createdAt asc` and each answer including `user` (Author). Stage 2 **does not** change this contract; Stage 3 will switch ordering to vote score desc.
 
 ## Security Notes
 

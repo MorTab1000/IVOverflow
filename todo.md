@@ -93,11 +93,14 @@
 
 **Branch:** `feature/stage-2-answers`
 
+> Backend DB/API blueprint: see **Stage 2 Backend Blueprint** in `architecture.md` (approved design before implementation).
+
 ### Backend
 
-- [x] Extend Prisma schema — Answer model + relations (schema exists; endpoint pending)
-- [ ] `POST /answer` — submit answer to a question (questionId, body)
-- [ ] Update `GET /getQuestionAnswer` — include answers (unordered until Stage 3)
+- [x] Extend Prisma schema — Answer model + relations (`User` ↔ `Answer` ↔ `Question`; already in init migration — **no new migrate for Stage 2**)
+- [x] `GET /getQuestionAnswer` — already returns `answers[]` with author, ordered by `createdAt asc` (vote-score sort deferred to Stage 3)
+- [ ] `POST /answer` — JWT required; body `{ questionId, body }`; create Answer for `req.userId`; `201` → `{ data: { answer } }` with Author include; 400 if missing fields, 404 if question missing
+- [ ] Stage 2 API tests — Vitest + Supertest for `POST /answer` (mock Prisma); cover 201 / 400 / 401 / 404
 
 ### Frontend
 
@@ -143,7 +146,7 @@
 
 ## Polish & Extras (optional)
 
-- [ ] Code syntax highlighting in questions/answers
+- [ ] Code syntax highlighting in questions/answers (**Prism.js** — locked in `architecture.md`; not started until Polish)
 - [ ] Tag filtering on questions list
 - [ ] Loading and error states in UI
 - [ ] Basic responsive layout

@@ -67,5 +67,5 @@ When discussing layouts, architecture, or UI options:
 - [x] Phase 0 setup (monorepo, Docker, CI, Husky)
 - [x] Stage 1 backend (auth + question endpoints)
 - [x] Stage 1 frontend (login, Redux, question pages)
-- [ ] Stage 2 answers
+- [ ] Stage 2 answers — backend blueprint drafted in `architecture.md`; awaiting approval before implementation
 - [ ] Stage 3 voting
