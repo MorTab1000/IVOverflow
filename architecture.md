@@ -524,7 +524,7 @@ _None — all architectural choices for Stages 1–3 are locked. Remaining polis
 
 ### Prisma relations (already in `schema.prisma`)
 
-```
+```text
 User 1 ──* Question   (User.questions / Question.user)
 User 1 ──* Answer     (User.answers / Answer.user)
 Question 1 ──* Answer (Question.answers / Answer.question)
