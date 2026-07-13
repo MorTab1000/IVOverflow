@@ -104,16 +104,16 @@
 
 ### Frontend
 
-- [ ] Answer form on question detail page
-- [ ] Display answers below the question
-- [ ] Submit answer → call `/answer`
-- [ ] Show answer author and timestamp
+- [x] Answer form on question detail page
+- [x] Display answers below the question
+- [x] Submit answer → call `/answer`
+- [x] Show answer author and timestamp
 
 ### Acceptance
 
-- [ ] CI pipeline passes on PR
-- [ ] Logged-in user can submit an answer on a question page
-- [ ] Answers persist and display on reload
+- [x] CI pipeline passes on PR
+- [x] Logged-in user can submit an answer on a question page
+- [x] Answers persist and display on reload
 
 ---
 

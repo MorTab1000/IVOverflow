@@ -136,16 +136,16 @@ sequenceDiagram
 
 ## Frontend Pages
 
-| Page            | Route            | Stage | Description                                              |
-| --------------- | ---------------- | ----- | -------------------------------------------------------- |
-| Login           | `/login`         | 1     | Email/password form                                      |
-| Questions List  | `/`              | 1     | Browse all questions                                     |
-| Ask Question    | _modal on `/`_   | 1     | Overlay form: title, body, tags — not a standalone route |
-| Question Detail | `/questions/:id` | 1–3   | Question + answers + vote UI                             |
+| Page            | Route            | Stage | Description                                                 |
+| --------------- | ---------------- | ----- | ----------------------------------------------------------- |
+| Login           | `/login`         | 1     | Email/password form                                         |
+| Questions List  | `/`              | 1     | Browse all questions                                        |
+| Ask Question    | _modal on `/`_   | 1     | Overlay form: title, body, tags — not a standalone route    |
+| Question Detail | `/questions/:id` | 1–2   | Question + answers list + answer form; voting UI in Stage 3 |
 
 ## Frontend Architecture
 
-> Scope: Stage 1 (auth + questions). Answer/voting UI (Stage 2–3) plugs into the same structure without refactoring.
+> Scope: Stages 1–2 (auth, questions, answers). Voting UI (Stage 3) plugs into the same structure without refactoring.
 
 ### Folder Structure (`client/src`)
 
@@ -161,7 +161,8 @@ client/src/
 ├── api/                          # RTK Query layer (the only place that calls fetch)
 │   ├── baseApi.ts                # createApi base: baseUrl "/api", prepareHeaders (JWT), 401 handling
 │   ├── authApi.ts                # injectEndpoints: login, userInfo
-│   └── questionsApi.ts           # injectEndpoints: getQuestions, createQuestion, getQuestionAnswer
+│   ├── questionsApi.ts           # injectEndpoints: getQuestions, createQuestion, getQuestionAnswer
+│   └── answersApi.ts             # injectEndpoints: createAnswer (invalidates Question by id)
 ├── features/
 │   └── auth/
 │       └── authSlice.ts          # { token, user } + setCredentials/logout, syncs to localStorage
@@ -172,39 +173,45 @@ client/src/
 │   │   ├── TextArea.tsx
 │   │   └── Modal.tsx
 │   ├── layout/
-│   │   ├── AppHeader.tsx         # logo, search (visual only in Stage 1), Ask question, logout
-│   │   └── ProtectedRoute.tsx    # redirects to /login if not authenticated
+│   │   ├── AppHeader.tsx         # logo, search (visual only), Ask question, logout
+│   │   └── ProtectedRoute.tsx    # redirects to /login if not authenticated; owns Ask Question modal
 │   ├── auth/
 │   │   └── LoginForm.tsx
-│   └── questions/
-│       ├── QuestionList.tsx
-│       ├── QuestionListItem.tsx
-│       ├── TagBadge.tsx
-│       ├── AskQuestionModal.tsx
-│       └── AskQuestionForm.tsx
+│   ├── questions/
+│   │   ├── QuestionList.tsx
+│   │   ├── QuestionListItem.tsx
+│   │   ├── TagBadge.tsx
+│   │   ├── AskQuestionModal.tsx
+│   │   └── AskQuestionForm.tsx
+│   └── answers/
+│       ├── AnswerList.tsx
+│       ├── AnswerListItem.tsx
+│       └── AnswerForm.tsx
 ├── pages/                        # kebab-case files (route-level), one per route
 │   ├── login-page.tsx
 │   ├── questions-page.tsx
-│   └── question-detail-page.tsx
+│   └── question-detail-page.tsx  # question + answers list + answer form
 ├── types/                        # shared contracts with the backend (see below)
 │   ├── user.ts
 │   ├── question.ts
-│   ├── answer.ts                 # defined now (backend already returns it); unused until Stage 2
+│   ├── answer.ts                 # Answer + CreateAnswerRequest/Response
 │   ├── auth.ts
 │   └── api.ts                    # ApiSuccess<T> / ApiError envelope
 └── utils/
-    └── format-date.ts            # "asked <date>" / "answered <date>" formatting
+    ├── format-date.ts            # "asked <date>" / "answered <date>" formatting
+    └── get-error-message.ts      # extract `{ error }` from RTK Query failures
 ```
 
 **Notes**
 
 - `api/` uses RTK Query exclusively — no component calls `fetch`/`axios` directly.
-- `features/auth/authSlice.ts` is the **only** slice needed for Stage 1 (no server data is duplicated in plain Redux state — RTK Query owns the questions cache).
+- `features/auth/authSlice.ts` is the **only** plain Redux slice (RTK Query owns questions/answers cache).
 - Naming follows `.cursorrules`: `kebab-case` for `pages/`, `PascalCase` for components in `components/`.
+- `createAnswer` invalidates `{ type: "Question", id: questionId }` so the active `getQuestionAnswer` query refetches — no full page reload.
 
 ### TypeScript Interfaces (Backend ↔ Frontend Contract)
 
-These mirror the exact JSON shapes returned by `server/src/routes/auth.ts` and `server/src/routes/questions.ts` today, so the two sides can't drift silently.
+These mirror the exact JSON shapes returned by the Express routes so the two sides can't drift silently.
 
 ```typescript
 // types/api.ts — matches .cursorrules response envelope
@@ -241,7 +248,7 @@ export interface Question {
   user: Author;
 }
 
-// types/answer.ts — Stage 2 model, typed now to match GET /getQuestionAnswer today
+// types/answer.ts
 export interface Answer {
   id: string;
   questionId: string;
@@ -249,6 +256,13 @@ export interface Answer {
   body: string;
   createdAt: string;
   user: Author;
+}
+export interface CreateAnswerRequest {
+  questionId: string;
+  body: string;
+}
+export interface CreateAnswerResponse {
+  answer: Answer;
 }
 
 // types/auth.ts
@@ -270,7 +284,7 @@ export interface CreateQuestionResponse {
 }
 export interface GetQuestionAnswerResponse {
   question: Question;
-  answers: Answer[]; // empty array until Stage 2
+  answers: Answer[];
 }
 ```
 
@@ -278,21 +292,24 @@ RTK Query endpoints use `transformResponse: (res: ApiSuccess<T>) => res.data` so
 
 ### Component Breakdown & State Flow
 
-| Component                                     | Type  | Responsibility                                                                                                                              |
-| --------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `App.tsx`                                     | Smart | Router only; renders `/login` and `ProtectedRoute`-wrapped app routes                                                                       |
-| `ProtectedRoute`                              | Smart | Reads `state.auth.token` via `useAppSelector`; redirects to `/login` if absent                                                              |
-| `AppHeader`                                   | Smart | Reads current user; dispatches `logout()`; opens Ask Question modal                                                                         |
-| `login-page.tsx`                              | Smart | Calls `useLoginMutation`; on success dispatches `setCredentials`, navigates `/`                                                             |
-| `LoginForm`                                   | Dumb  | Controlled email/password inputs; `onSubmit(email, password)`; shows passed-in error/loading                                                |
-| `questions-page.tsx`                          | Smart | Calls `useGetQuestionsQuery` + `useCreateQuestionMutation`; owns modal open/close local state                                               |
-| `QuestionList`                                | Dumb  | Maps `Question[]` → `QuestionListItem`                                                                                                      |
-| `QuestionListItem`                            | Dumb  | Renders title/body excerpt/tags/author/date; `<Link>` to detail page. **No vote/answer counts in Stage 1** (not yet available from the API) |
-| `TagBadge`                                    | Dumb  | Single tag pill                                                                                                                             |
-| `AskQuestionModal`                            | Dumb  | Wraps `Modal` + `AskQuestionForm`; `open`/`onClose` props                                                                                   |
-| `AskQuestionForm`                             | Dumb  | Title/body/tags(comma-separated) inputs; `onSubmit(payload)`                                                                                |
-| `question-detail-page.tsx`                    | Smart | Calls `useGetQuestionAnswerQuery(id)` via `useParams`; renders question content + metadata only (answers UI arrives in Stage 2)             |
-| `Button` / `TextField` / `TextArea` / `Modal` | Dumb  | Store-agnostic UI primitives, fully prop-driven                                                                                             |
+| Component                                     | Type  | Responsibility                                                                                                            |
+| --------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------- |
+| `App.tsx`                                     | Smart | Router only; renders `/login` and `ProtectedRoute`-wrapped app routes                                                     |
+| `ProtectedRoute`                              | Smart | Reads `state.auth.token`; redirects to `/login` if absent; owns Ask Question modal + `createQuestion`                     |
+| `AppHeader`                                   | Smart | Reads current user; dispatches `logout()`; opens Ask Question modal                                                       |
+| `login-page.tsx`                              | Smart | Calls `useLoginMutation`; on success dispatches `setCredentials`, navigates `/`                                           |
+| `LoginForm`                                   | Dumb  | Controlled email/password inputs; `onSubmit(email, password)`; shows passed-in error/loading                              |
+| `questions-page.tsx`                          | Smart | Calls `useGetQuestionsQuery`; renders `QuestionList`                                                                      |
+| `QuestionList`                                | Dumb  | Maps `Question[]` → `QuestionListItem`                                                                                    |
+| `QuestionListItem`                            | Dumb  | Renders title/body excerpt/tags/author/date; `<Link>` to detail page. **No vote/answer counts** (Stage 3+)                |
+| `TagBadge`                                    | Dumb  | Single tag pill                                                                                                           |
+| `AskQuestionModal`                            | Dumb  | Wraps `Modal` + `AskQuestionForm`; `open`/`onClose` props                                                                 |
+| `AskQuestionForm`                             | Dumb  | Title/body/tags(comma-separated) inputs; `onSubmit(payload)`                                                              |
+| `question-detail-page.tsx`                    | Smart | `useGetQuestionAnswerQuery` + `useCreateAnswerMutation`; owns `formKey` / submit error; wires `AnswerList` + `AnswerForm` |
+| `AnswerList`                                  | Dumb  | Renders `Answer[]` or empty state                                                                                         |
+| `AnswerListItem`                              | Dumb  | Answer body + author/timestamp (**no vote UI** until Stage 3)                                                             |
+| `AnswerForm`                                  | Dumb  | Body textarea; `onSubmit({ body })`; shows passed-in error/loading; remounted via `key={formKey}` after success           |
+| `Button` / `TextField` / `TextArea` / `Modal` | Dumb  | Store-agnostic UI primitives, fully prop-driven                                                                           |
 
 ```mermaid
 flowchart TD
@@ -311,10 +328,13 @@ flowchart TD
     QuestionsPage --> QuestionList
     QuestionList --> QuestionListItem
     QuestionListItem --> TagBadge
-    QuestionsPage --> AskQuestionModal
+    Protected --> AskQuestionModal
     AskQuestionModal --> AskQuestionForm
 
     DetailRoute --> QuestionDetailPage[question-detail-page.tsx]
+    QuestionDetailPage --> AnswerList
+    AnswerList --> AnswerListItem
+    QuestionDetailPage --> AnswerForm
 ```
 
 **Token flow (login → authenticated request → expiry):**
