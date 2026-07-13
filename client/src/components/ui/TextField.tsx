@@ -15,8 +15,18 @@ export default function TextField({ label, error, id, className, ...rest }: Text
       <label htmlFor={inputId} className={styles.label}>
         {label}
       </label>
-      <input id={inputId} className={styles.input} aria-invalid={Boolean(error)} {...rest} />
-      {error && <p className={styles.error}>{error}</p>}
+      <input
+        {...rest}
+        id={inputId}
+        className={styles.input}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${inputId}-error` : undefined}
+      />
+      {error && (
+        <p id={`${inputId}-error`} className={styles.error}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }

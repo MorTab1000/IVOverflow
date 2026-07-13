@@ -1,0 +1,30 @@
+.root {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.text {
+  white-space: pre-wrap;
+}
+
+.codeBlock {
+  margin: 0.75rem 0;
+  padding: 0.85rem 1rem;
+  overflow-x: auto;
+  max-width: 100%;
+  border: 1px solid #e3e6e8;
+  border-radius: 6px;
+  background-color: #f6f8fa;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.codeBlock code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre;
+}

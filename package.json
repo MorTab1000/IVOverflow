@@ -3,12 +3,17 @@
   "version": "1.0.0",
   "private": true,
   "description": "IVOverflow — developer Q&A platform",
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
-    "prepare": "husky",
+    "prepare": "node -e \"if(process.env.CI||process.env.HUSKY==='0')process.exit(0);const{execSync}=require('child_process');const{existsSync}=require('fs');if(!existsSync('node_modules/husky/package.json'))process.exit(0);execSync('husky',{stdio:'inherit'})\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint:staged": "lint-staged"
@@ -28,6 +33,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
+    "concurrently": "^10.0.3",
     "eslint": "^9.22.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-react": "^7.37.4",

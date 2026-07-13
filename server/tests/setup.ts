@@ -16,6 +16,14 @@ vi.mock("../src/lib/prisma", () => ({
     },
     answer: {
       create: vi.fn(),
+      findUnique: vi.fn(),
+    },
+    vote: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      aggregate: vi.fn(),
     },
   },
 }));

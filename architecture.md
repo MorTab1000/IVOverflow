@@ -136,22 +136,22 @@ sequenceDiagram
 
 ## Frontend Pages
 
-| Page            | Route            | Stage | Description                                                 |
-| --------------- | ---------------- | ----- | ----------------------------------------------------------- |
-| Login           | `/login`         | 1     | Email/password form                                         |
-| Questions List  | `/`              | 1     | Browse all questions                                        |
-| Ask Question    | _modal on `/`_   | 1     | Overlay form: title, body, tags — not a standalone route    |
-| Question Detail | `/questions/:id` | 1–2   | Question + answers list + answer form; voting UI in Stage 3 |
+| Page            | Route            | Stage | Description                                                                                      |
+| --------------- | ---------------- | ----- | ------------------------------------------------------------------------------------------------ |
+| Login           | `/login`         | 1     | Email/password form                                                                              |
+| Questions List  | `/`              | 1     | Browse all questions                                                                             |
+| Ask Question    | _global modal_   | 1     | Owned by `ProtectedRoute.tsx` — available on all authenticated routes (`/` and `/questions/:id`) |
+| Question Detail | `/questions/:id` | 1–3   | Question + answers + voting UI + answer form                                                     |
 
 ## Frontend Architecture
 
-> Scope: Stages 1–2 (auth, questions, answers). Voting UI (Stage 3) plugs into the same structure without refactoring.
+> Scope: Stages 1–3 (auth, questions, answers, voting).
 
 ### Folder Structure (`client/src`)
 
 CSS Modules are co-located with their component (`Component.tsx` + `Component.module.css`), omitted below for brevity.
 
-```
+```text
 client/src/
 ├── main.tsx                    # ReactDOM root, wraps <App/> in <Provider store>
 ├── App.tsx                     # <BrowserRouter> + <Routes>
@@ -162,7 +162,8 @@ client/src/
 │   ├── baseApi.ts                # createApi base: baseUrl "/api", prepareHeaders (JWT), 401 handling
 │   ├── authApi.ts                # injectEndpoints: login, userInfo
 │   ├── questionsApi.ts           # injectEndpoints: getQuestions, createQuestion, getQuestionAnswer
-│   └── answersApi.ts             # injectEndpoints: createAnswer (invalidates Question by id)
+│   ├── answersApi.ts             # injectEndpoints: createAnswer (invalidates Question by id)
+│   └── votesApi.ts               # injectEndpoints: vote (invalidates Question by id)
 ├── features/
 │   └── auth/
 │       └── authSlice.ts          # { token, user } + setCredentials/logout, syncs to localStorage
@@ -183,10 +184,12 @@ client/src/
 │   │   ├── TagBadge.tsx
 │   │   ├── AskQuestionModal.tsx
 │   │   └── AskQuestionForm.tsx
-│   └── answers/
-│       ├── AnswerList.tsx
-│       ├── AnswerListItem.tsx
-│       └── AnswerForm.tsx
+│   ├── answers/
+│   │   ├── AnswerList.tsx
+│   │   ├── AnswerListItem.tsx    # vote column (score + up/down) + body/meta
+│   │   └── AnswerForm.tsx
+│   └── content/
+│       └── RichBody.tsx          # Prism.js fenced-code highlighting in bodies
 ├── pages/                        # kebab-case files (route-level), one per route
 │   ├── login-page.tsx
 │   ├── questions-page.tsx
@@ -194,7 +197,7 @@ client/src/
 ├── types/                        # shared contracts with the backend (see below)
 │   ├── user.ts
 │   ├── question.ts
-│   ├── answer.ts                 # Answer + CreateAnswerRequest/Response
+│   ├── answer.ts                 # Answer, AnswerWithVotes, CreateAnswer*, VoteRequest/Response
 │   ├── auth.ts
 │   └── api.ts                    # ApiSuccess<T> / ApiError envelope
 └── utils/
@@ -257,12 +260,25 @@ export interface Answer {
   createdAt: string;
   user: Author;
 }
+export interface AnswerWithVotes extends Answer {
+  score: number;
+  myVote: 1 | -1 | null;
+}
 export interface CreateAnswerRequest {
   questionId: string;
   body: string;
 }
 export interface CreateAnswerResponse {
   answer: Answer;
+}
+export interface VoteRequest {
+  answerId: string;
+  value: 1 | -1;
+  questionId: string; // RTK Query invalidation only — not sent in POST body
+}
+export interface VoteResponse {
+  vote: { id: string; answerId: string; userId: string; value: number } | null;
+  score: number;
 }
 
 // types/auth.ts
@@ -284,7 +300,7 @@ export interface CreateQuestionResponse {
 }
 export interface GetQuestionAnswerResponse {
   question: Question;
-  answers: Answer[];
+  answers: AnswerWithVotes[];
 }
 ```
 
@@ -292,24 +308,24 @@ RTK Query endpoints use `transformResponse: (res: ApiSuccess<T>) => res.data` so
 
 ### Component Breakdown & State Flow
 
-| Component                                     | Type  | Responsibility                                                                                                            |
-| --------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------- |
-| `App.tsx`                                     | Smart | Router only; renders `/login` and `ProtectedRoute`-wrapped app routes                                                     |
-| `ProtectedRoute`                              | Smart | Reads `state.auth.token`; redirects to `/login` if absent; owns Ask Question modal + `createQuestion`                     |
-| `AppHeader`                                   | Smart | Reads current user; dispatches `logout()`; opens Ask Question modal                                                       |
-| `login-page.tsx`                              | Smart | Calls `useLoginMutation`; on success dispatches `setCredentials`, navigates `/`                                           |
-| `LoginForm`                                   | Dumb  | Controlled email/password inputs; `onSubmit(email, password)`; shows passed-in error/loading                              |
-| `questions-page.tsx`                          | Smart | Calls `useGetQuestionsQuery`; renders `QuestionList`                                                                      |
-| `QuestionList`                                | Dumb  | Maps `Question[]` → `QuestionListItem`                                                                                    |
-| `QuestionListItem`                            | Dumb  | Renders title/body excerpt/tags/author/date; `<Link>` to detail page. **No vote/answer counts** (Stage 3+)                |
-| `TagBadge`                                    | Dumb  | Single tag pill                                                                                                           |
-| `AskQuestionModal`                            | Dumb  | Wraps `Modal` + `AskQuestionForm`; `open`/`onClose` props                                                                 |
-| `AskQuestionForm`                             | Dumb  | Title/body/tags(comma-separated) inputs; `onSubmit(payload)`                                                              |
-| `question-detail-page.tsx`                    | Smart | `useGetQuestionAnswerQuery` + `useCreateAnswerMutation`; owns `formKey` / submit error; wires `AnswerList` + `AnswerForm` |
-| `AnswerList`                                  | Dumb  | Renders `Answer[]` or empty state                                                                                         |
-| `AnswerListItem`                              | Dumb  | Answer body + author/timestamp (**no vote UI** until Stage 3)                                                             |
-| `AnswerForm`                                  | Dumb  | Body textarea; `onSubmit({ body })`; shows passed-in error/loading; remounted via `key={formKey}` after success           |
-| `Button` / `TextField` / `TextArea` / `Modal` | Dumb  | Store-agnostic UI primitives, fully prop-driven                                                                           |
+| Component                                     | Type  | Responsibility                                                                                                  |
+| --------------------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------- |
+| `App.tsx`                                     | Smart | Router only; renders `/login` and `ProtectedRoute`-wrapped app routes                                           |
+| `ProtectedRoute`                              | Smart | Reads `state.auth.token`; redirects to `/login` if absent; owns Ask Question modal + `createQuestion`           |
+| `AppHeader`                                   | Smart | Reads current user; dispatches `logout()`; opens Ask Question modal                                             |
+| `login-page.tsx`                              | Smart | Calls `useLoginMutation`; on success dispatches `setCredentials`, navigates `/`                                 |
+| `LoginForm`                                   | Dumb  | Controlled email/password inputs; `onSubmit(email, password)`; shows passed-in error/loading                    |
+| `questions-page.tsx`                          | Smart | Calls `useGetQuestionsQuery`; renders `QuestionList`                                                            |
+| `QuestionList`                                | Dumb  | Maps `Question[]` → `QuestionListItem`                                                                          |
+| `QuestionListItem`                            | Dumb  | Renders title/body excerpt/tags/author/date; `<Link>` to detail page. **No vote/answer counts** (Stage 3+)      |
+| `TagBadge`                                    | Dumb  | Single tag pill                                                                                                 |
+| `AskQuestionModal`                            | Dumb  | Wraps `Modal` + `AskQuestionForm`; `open`/`onClose` props                                                       |
+| `AskQuestionForm`                             | Dumb  | Title/body/tags(comma-separated) inputs; `onSubmit(payload)`                                                    |
+| `question-detail-page.tsx`                    | Smart | `useGetQuestionAnswerQuery` + `useCreateAnswerMutation` + `useVoteMutation`; wires `AnswerList` / `AnswerForm`  |
+| `AnswerList`                                  | Dumb  | Renders `AnswerWithVotes[]` or empty state; forwards `onVote(answerId, value)`                                  |
+| `AnswerListItem`                              | Dumb  | SO-style vote column (`score`, `myVote`, `onVote`) + body/author/timestamp                                      |
+| `AnswerForm`                                  | Dumb  | Body textarea; `onSubmit({ body })`; shows passed-in error/loading; remounted via `key={formKey}` after success |
+| `Button` / `TextField` / `TextArea` / `Modal` | Dumb  | Store-agnostic UI primitives, fully prop-driven                                                                 |
 
 ```mermaid
 flowchart TD
@@ -447,16 +463,17 @@ cd client && npm run dev      # http://localhost:5173
 
 ## Project Structure (Monorepo)
 
-```
+```text
 IVOverflow/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml              # GitHub Actions: lint + build (client + server)
 ├── client/                     # React frontend (runs locally)
 │   ├── src/
+│   │   ├── app/                # Redux Toolkit store + typed hooks
+│   │   ├── api/                # RTK Query API layer
 │   │   ├── components/
 │   │   ├── pages/
-│   │   ├── store/              # Redux Toolkit + RTK Query
 │   │   └── App.tsx
 │   └── package.json
 ├── server/                     # Express backend (runs locally)
@@ -481,9 +498,9 @@ IVOverflow/
 
 ### Server-side answer ordering
 
-**Stage 2 (current):** `GET /getQuestionAnswer` returns answers sorted by **`createdAt ASC`** (oldest first). No vote scores are computed yet.
+**Stage 2:** `GET /getQuestionAnswer` returned answers sorted by **`createdAt ASC`** (oldest first).
 
-**Stage 3 (planned):** The same endpoint will switch to **vote score descending** (highest first), with `createdAt ASC` as a tiebreaker:
+**Stage 3 (shipped):** The same endpoint returns each answer with **`score`** and **`myVote`**, sorted by **vote score descending** (highest first), with `createdAt ASC` as a tiebreaker. Scores are summed from vote rows in the handler (Prisma cannot `orderBy` a related `SUM`).
 
 ```sql
 -- Conceptual query shape (Stage 3)
@@ -495,13 +512,14 @@ GROUP BY answers.id
 ORDER BY score DESC, answers.created_at ASC
 ```
 
-The frontend does **not** re-sort answers — ordering is guaranteed by the API for whichever stage is active.
+The frontend does **not** re-sort answers — ordering is guaranteed by the API.
 
 ### Vote constraint
 
 - One vote per user per answer, enforced by Prisma `@@unique([userId, answerId])`
-- `POST /vote` upserts: if the user already voted, update `value` (+1 or -1); otherwise insert
-- Changing from upvote to downvote (or vice versa) updates the existing vote row
+- `POST /vote` create / flip / cancel: no row → insert; opposite value → update; **same value → delete** (`myVote` → `null`)
+- Vote data delivery (**Option A**): `score` + `myVote` embedded on each answer in `GET /getQuestionAnswer`; `GET /getVotes` kept for targeted refresh
+- Frontend: `useVoteMutation` invalidates `{ type: "Question", id: questionId }` so the detail query refetches
 
 ## Decisions Made
 
@@ -511,10 +529,13 @@ The frontend does **not** re-sort answers — ordering is guaranteed by the API 
 - [x] **Git Flow:** Feature branches per stage, PR + CI before merge
 - [x] **CI:** GitHub Actions — lint + build on push/PR
 - [x] **Vote constraint:** `@@unique([userId, answerId])` — one vote per user per answer
-- [x] **Answer ordering:** Stage 2 — `createdAt ASC`; Stage 3 — vote score (desc) with `createdAt` tiebreaker
+- [x] **Answer ordering:** Stage 2 — `createdAt ASC`; Stage 3 — vote score (desc) with `createdAt` tiebreaker (shipped)
+- [x] **Vote data delivery:** Option A — embed `score` + `myVote` on `GET /getQuestionAnswer`; keep `GET /getVotes`
+- [x] **Vote cancel:** same `value` as existing vote deletes the row (`myVote` → `null`)
 - [x] **JWT storage:** `localStorage` — backend returns the token in the JSON body (no `Set-Cookie`), so the client must persist it itself; `localStorage` keeps the session alive across refreshes with no refresh-token endpoint to otherwise restore it
 - [x] **Frontend styling:** CSS Modules (`*.module.css`) co-located per component — zero extra dependencies, scoped class names, matches the plain wireframe aesthetic
-- [x] **Syntax highlighting:** **Prism.js** — deferred to Polish & Extras; Stages 1–3 keep plain textareas / unhighlighted `<pre>` for question and answer bodies
+- [x] **Syntax highlighting:** **Prism.js** — `RichBody` renders fenced ` ```lang ` blocks in question/answer bodies on the detail page
+- [x] **Vote UI concurrency:** vote buttons disabled while `useVoteMutation` `isLoading` (`isVoting`) to prevent double-submit races
 
 ## Open Decisions
 
@@ -577,9 +598,9 @@ Answer 1 ──* Vote     (present; unused until Stage 3)
 
 Returns `{ data: { question, answers } }` with each answer including `user` (Author).
 
-**Answer ordering in Stage 2:** `createdAt ASC` (oldest first). This is the active contract while voting is not yet implemented.
+**Answer ordering in Stage 2:** `createdAt ASC` (oldest first). This was the active contract before voting.
 
-**Stage 3 enhancement:** The same endpoint will reorder answers by **vote score descending**, using `createdAt ASC` as a tiebreaker. The frontend will continue to render answers in server-provided order without client-side re-sorting.
+**Stage 3 (shipped):** Answers include `score` + `myVote` and are ordered by vote score descending (`createdAt ASC` tiebreaker). See **Answer Sorting & Voting Rules** above.
 
 ## Security Notes
 

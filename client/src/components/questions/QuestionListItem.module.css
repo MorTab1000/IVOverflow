@@ -4,6 +4,8 @@
   gap: 0.5rem;
   padding: 1.25rem 0;
   border-bottom: 1px solid #ececec;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .title {
@@ -11,6 +13,8 @@
   font-weight: 600;
   color: #1a1a1a;
   text-decoration: none;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .title:hover {
@@ -22,6 +26,8 @@
   font-size: 0.9rem;
   color: #555;
   line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tags {
@@ -31,6 +37,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  max-width: 100%;
 }
 
 .meta {
@@ -38,4 +45,7 @@
   margin: 0;
   font-size: 0.8rem;
   color: #888;
+  max-width: 100%;
+  text-align: right;
+  overflow-wrap: anywhere;
 }

@@ -63,9 +63,14 @@ router.get("/getQuestionAnswer", async (req, res) => {
     include: {
       user: { select: authorSelect },
       answers: {
-        orderBy: { createdAt: "asc" },
         include: {
           user: { select: authorSelect },
+          votes: {
+            select: {
+              value: true,
+              userId: true,
+            },
+          },
         },
       },
     },
@@ -76,7 +81,27 @@ router.get("/getQuestionAnswer", async (req, res) => {
     return;
   }
 
-  const { answers, ...questionData } = question;
+  const { answers: rawAnswers, ...questionData } = question;
+  const userId = req.userId!;
+
+  const answers = rawAnswers
+    .map(({ votes, ...answer }) => {
+      const score = votes.reduce((sum, v) => sum + v.value, 0);
+      const mine = votes.find((v) => v.userId === userId);
+      const myVote = mine?.value === 1 || mine?.value === -1 ? mine.value : null;
+
+      return {
+        ...answer,
+        score,
+        myVote,
+      };
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
 
   res.json({
     data: {

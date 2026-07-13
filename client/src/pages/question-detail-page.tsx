@@ -2,22 +2,27 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useCreateAnswerMutation } from "../api/answersApi";
 import { useGetQuestionAnswerQuery } from "../api/questionsApi";
+import { useVoteMutation } from "../api/votesApi";
 import AnswerForm from "../components/answers/AnswerForm";
 import type { AnswerFormSubmitValues } from "../components/answers/AnswerForm";
 import AnswerList from "../components/answers/AnswerList";
 import TagBadge from "../components/questions/TagBadge";
+import RichBody from "../components/content/RichBody";
 import { formatDate } from "../utils/format-date";
 import { getApiErrorMessage } from "../utils/get-error-message";
 import styles from "./question-detail-page.module.css";
 
 const CREATE_ANSWER_FAILED_MESSAGE = "Unable to submit your answer. Please try again.";
+const VOTE_FAILED_MESSAGE = "Unable to update your vote. Please try again.";
 
 export default function QuestionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, isError } = useGetQuestionAnswerQuery(id ?? "", { skip: !id });
   const [createAnswer, { isLoading: isSubmitting }] = useCreateAnswerMutation();
+  const [vote, { isLoading: isVoting }] = useVoteMutation();
   const [formKey, setFormKey] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [voteError, setVoteError] = useState<string | null>(null);
 
   if (!id) {
     return (
@@ -57,6 +62,17 @@ export default function QuestionDetailPage() {
     }
   }
 
+  async function handleVote(answerId: string, value: 1 | -1) {
+    setVoteError(null);
+
+    try {
+      // votesApi invalidatesTags → getQuestionAnswer refetches (server re-sorts)
+      await vote({ answerId, value, questionId: id! }).unwrap();
+    } catch (error) {
+      setVoteError(getApiErrorMessage(error, VOTE_FAILED_MESSAGE));
+    }
+  }
+
   return (
     <main className={styles.page}>
       <article>
@@ -67,7 +83,7 @@ export default function QuestionDetailPage() {
 
         <hr className={styles.divider} />
 
-        <p className={styles.body}>{question.body}</p>
+        <RichBody text={question.body} className={styles.body} />
 
         {question.tags.length > 0 && (
           <ul className={styles.tags}>
@@ -84,7 +100,8 @@ export default function QuestionDetailPage() {
         <h2 id="answers-heading" className={styles.answersTitle}>
           {answers.length === 1 ? "1 Answer" : `${answers.length} Answers`}
         </h2>
-        <AnswerList answers={answers} />
+        {voteError && <p className={styles.statusError}>{voteError}</p>}
+        <AnswerList answers={answers} onVote={handleVote} isVoting={isVoting} />
       </section>
 
       <section className={styles.answerFormSection} aria-labelledby="answer-form-heading">

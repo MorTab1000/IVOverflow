@@ -1,4 +1,4 @@
-import type { Answer } from "./answer";
+import type { AnswerWithVotes } from "./answer";
 import type { Author } from "./user";
 
 export interface Question {
@@ -31,5 +31,5 @@ export interface CreateQuestionRequest {
 /** Response payload for GET /getQuestionAnswer */
 export interface GetQuestionAnswerResponse {
   question: Question;
-  answers: Answer[]; // empty array until Stage 2
+  answers: AnswerWithVotes[];
 }

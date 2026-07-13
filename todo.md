@@ -26,7 +26,7 @@
 - [x] Initialize monorepo structure (`client/` + `server/`)
 - [x] Add root `docker-compose.yml` (PostgreSQL only)
 - [x] Scaffold Express server with TypeScript
-- [ ] Scaffold React app with Redux Toolkit + RTK Query
+- [x] Scaffold React app with Redux Toolkit + RTK Query
 - [x] Create Prisma schema (User, Question, Answer, Vote)
 - [x] Set up JWT auth utilities (sign, verify, 1h expiry)
 - [x] Configure CORS and environment variables
@@ -124,30 +124,32 @@
 ### Backend
 
 - [x] Extend Prisma schema — Vote model with `@@unique([userId, answerId])` (schema exists; endpoints pending)
-- [ ] `POST /vote` — upvote (+1) or downvote (-1); upsert on re-vote
-- [ ] `GET /getVotes` — get vote counts per answer
-- [ ] Update `GET /getQuestionAnswer` — return answers sorted by vote score (desc), `createdAt` tiebreaker
+- [x] `POST /vote` — upvote (+1) or downvote (-1); upsert on re-vote; same value cancels (deletes row)
+- [x] `GET /getVotes` — get vote counts + `myVote` per answer for a question
+- [x] Update `GET /getQuestionAnswer` — embed `score` + `myVote`; sort by vote score (desc), `createdAt` tiebreaker
+- [x] Stage 3 API tests — Vitest + Supertest (`server/tests/votes.test.ts`)
 
 ### Frontend
 
-- [ ] Up/down arrow buttons on each answer
-- [ ] Display net vote score per answer
-- [ ] Render answers in server-provided order (no client-side re-sort)
-- [ ] Visual feedback on user's current vote
+- [x] Up/down arrow buttons on each answer (`AnswerListItem` vote column)
+- [x] Display net vote score per answer
+- [x] Render answers in server-provided order (no client-side re-sort)
+- [x] Visual feedback on user's current vote (`aria-pressed` + active CSS)
+- [x] RTK Query `votesApi` — `useVoteMutation` invalidates `{ type: "Question", id: questionId }`
 
 ### Acceptance
 
-- [ ] CI pipeline passes on PR
-- [ ] User can upvote and downvote answers
-- [ ] Vote counts update correctly
-- [ ] Highest-voted answer appears at the top (server-sorted)
+- [x] CI pipeline passes on PR
+- [x] User can upvote and downvote answers
+- [x] Vote counts update correctly
+- [x] Highest-voted answer appears at the top (server-sorted)
 
 ---
 
 ## Polish & Extras (optional)
 
-- [ ] Code syntax highlighting in questions/answers (**Prism.js** — locked in `architecture.md`; not started until Polish)
+- [x] Code syntax highlighting in questions/answers (**Prism.js** — `RichBody` on detail page)
 - [ ] Tag filtering on questions list
 - [ ] Loading and error states in UI
-- [ ] Basic responsive layout
-- [ ] README with setup and run instructions
+- [x] Basic responsive layout (header + list items wrap without horizontal scroll)
+- [x] README with setup and run instructions
