@@ -28,6 +28,7 @@ Follow this order (do not skip to implementation):
 - **One question per message** when clarifying
 - **YAGNI** — Don't add features beyond the assignment scope unless explicitly requested
 - **Document decisions** — When a choice is made (e.g., Postgres over MongoDB), update `architecture.md` immediately
+- **Update** `todo.md` **after every completed task** — Mark items `[x]` as soon as work is done; do not wait for the user to ask
 
 ## Source of Truth Files
 
@@ -61,8 +62,10 @@ When discussing layouts, architecture, or UI options:
 ## Current Status
 
 - [x] Source-of-truth files created
-- [ ] Database/ORM decision
-- [ ] Architecture design approved
-- [ ] Implementation plan written
-- [ ] Phase 0 setup
-- [ ] Stage 1–3 implementation
+- [x] Database/ORM decision (PostgreSQL + Prisma)
+- [x] Architecture design approved
+- [x] Phase 0 setup (monorepo, Docker, CI, Husky)
+- [x] Stage 1 backend (auth + question endpoints)
+- [x] Stage 1 frontend (login, Redux, question pages)
+- [ ] Stage 2 answers
+- [ ] Stage 3 voting

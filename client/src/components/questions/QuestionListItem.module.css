@@ -1,0 +1,41 @@
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid #ececec;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-decoration: none;
+}
+
+.title:hover {
+  text-decoration: underline;
+}
+
+.excerpt {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.meta {
+  align-self: flex-end;
+  margin: 0;
+  font-size: 0.8rem;
+  color: #888;
+}
