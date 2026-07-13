@@ -1,8 +1,8 @@
 import type { Author } from "./user";
 
 /**
- * Stage 2 model. Typed now because GET /getQuestionAnswer already returns
- * an `answers` array (empty until Stage 2 ships) — kept here to avoid drift.
+ * Mirrors the Answer shape returned by GET /getQuestionAnswer and POST /answer
+ * (with embedded Author — no email exposed).
  */
 export interface Answer {
   id: string;
@@ -11,4 +11,15 @@ export interface Answer {
   body: string;
   createdAt: string;
   user: Author;
+}
+
+/** Request body for POST /answer */
+export interface CreateAnswerRequest {
+  questionId: string;
+  body: string;
+}
+
+/** Response payload for POST /answer (wrapped in ApiSuccess by the server) */
+export interface CreateAnswerResponse {
+  answer: Answer;
 }
