@@ -68,4 +68,4 @@ When discussing layouts, architecture, or UI options:
 - [x] Stage 1 backend (auth + question endpoints)
 - [x] Stage 1 frontend (login, Redux, question pages)
 - [x] Stage 2 answers (backend + frontend on `feature/stage-2-answers`)
-- [ ] Stage 3 voting
+- [x] Stage 3 voting (backend + frontend)
