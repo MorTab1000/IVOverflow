@@ -152,10 +152,11 @@ describe("GET /getQuestionAnswer", () => {
   });
 
   it("returns 200 with question and empty answers for Stage 1", async () => {
-    mockedPrisma.question.findUnique.mockResolvedValue({
+    const questionWithAnswers = {
       ...sampleQuestion,
       answers: [],
-    });
+    };
+    mockedPrisma.question.findUnique.mockResolvedValue(questionWithAnswers);
 
     const res = await request(app)
       .get("/getQuestionAnswer")
