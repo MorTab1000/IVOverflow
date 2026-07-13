@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "description": "IVOverflow — developer Q&A platform",
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "db:up": "docker compose up -d",
@@ -28,6 +33,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
+    "concurrently": "^10.0.3",
     "eslint": "^9.22.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-react": "^7.37.4",

@@ -152,4 +152,4 @@
 - [ ] Tag filtering on questions list
 - [ ] Loading and error states in UI
 - [x] Basic responsive layout (header + list items wrap without horizontal scroll)
-- [ ] README with setup and run instructions
+- [x] README with setup and run instructions
