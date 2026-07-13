@@ -136,12 +136,12 @@ sequenceDiagram
 
 ## Frontend Pages
 
-| Page            | Route            | Stage | Description                                                 |
-| --------------- | ---------------- | ----- | ----------------------------------------------------------- |
-| Login           | `/login`         | 1     | Email/password form                                         |
-| Questions List  | `/`              | 1     | Browse all questions                                        |
-| Ask Question    | _modal on `/`_   | 1     | Overlay form: title, body, tags — not a standalone route    |
-| Question Detail | `/questions/:id` | 1–2   | Question + answers list + answer form; voting UI in Stage 3 |
+| Page            | Route            | Stage | Description                                                                                      |
+| --------------- | ---------------- | ----- | ------------------------------------------------------------------------------------------------ |
+| Login           | `/login`         | 1     | Email/password form                                                                              |
+| Questions List  | `/`              | 1     | Browse all questions                                                                             |
+| Ask Question    | _global modal_   | 1     | Owned by `ProtectedRoute.tsx` — available on all authenticated routes (`/` and `/questions/:id`) |
+| Question Detail | `/questions/:id` | 1–2   | Question + answers list + answer form; voting UI in Stage 3                                      |
 
 ## Frontend Architecture
 
@@ -151,7 +151,7 @@ sequenceDiagram
 
 CSS Modules are co-located with their component (`Component.tsx` + `Component.module.css`), omitted below for brevity.
 
-```
+```text
 client/src/
 ├── main.tsx                    # ReactDOM root, wraps <App/> in <Provider store>
 ├── App.tsx                     # <BrowserRouter> + <Routes>
@@ -447,16 +447,17 @@ cd client && npm run dev      # http://localhost:5173
 
 ## Project Structure (Monorepo)
 
-```
+```text
 IVOverflow/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml              # GitHub Actions: lint + build (client + server)
 ├── client/                     # React frontend (runs locally)
 │   ├── src/
+│   │   ├── app/                # Redux Toolkit store + typed hooks
+│   │   ├── api/                # RTK Query API layer
 │   │   ├── components/
 │   │   ├── pages/
-│   │   ├── store/              # Redux Toolkit + RTK Query
 │   │   └── App.tsx
 │   └── package.json
 ├── server/                     # Express backend (runs locally)

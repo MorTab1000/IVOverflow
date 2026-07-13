@@ -26,7 +26,7 @@
 - [x] Initialize monorepo structure (`client/` + `server/`)
 - [x] Add root `docker-compose.yml` (PostgreSQL only)
 - [x] Scaffold Express server with TypeScript
-- [ ] Scaffold React app with Redux Toolkit + RTK Query
+- [x] Scaffold React app with Redux Toolkit + RTK Query
 - [x] Create Prisma schema (User, Question, Answer, Vote)
 - [x] Set up JWT auth utilities (sign, verify, 1h expiry)
 - [x] Configure CORS and environment variables

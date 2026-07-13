@@ -27,9 +27,14 @@ export default function TextArea({
         className={styles.textarea}
         rows={rows}
         aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${textareaId}-error` : undefined}
         {...rest}
       />
-      {error && <p className={styles.error}>{error}</p>}
+      {error && (
+        <p id={`${textareaId}-error`} className={styles.error}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }
