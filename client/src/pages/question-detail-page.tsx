@@ -92,7 +92,7 @@ export default function QuestionDetailPage() {
           Your Answer
         </h2>
         <AnswerForm
-          key={formKey}
+          key={`${id}-${formKey}`}
           onSubmit={handleCreateAnswer}
           isSubmitting={isSubmitting}
           errorMessage={submitError}

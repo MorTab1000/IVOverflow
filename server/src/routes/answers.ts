@@ -12,38 +12,50 @@ const authorSelect = {
 
 router.use(authMiddleware);
 
-router.post("/answer", async (req, res) => {
-  const { questionId, body } = req.body as {
-    questionId?: string;
-    body?: string;
-  };
+router.post("/answer", async (req, res, next) => {
+  try {
+    const { questionId, body } = req.body as {
+      questionId?: unknown;
+      body?: unknown;
+    };
 
-  if (!questionId?.trim() || !body?.trim()) {
-    res.status(400).json({ error: "questionId and body are required" });
-    return;
+    if (typeof questionId !== "string" || typeof body !== "string") {
+      res.status(400).json({ error: "questionId and body are required" });
+      return;
+    }
+
+    if (!questionId.trim() || !body.trim()) {
+      res.status(400).json({ error: "questionId and body are required" });
+      return;
+    }
+
+    const trimmedQuestionId = questionId.trim();
+    const trimmedBody = body.trim();
+
+    const question = await prisma.question.findUnique({
+      where: { id: trimmedQuestionId },
+    });
+
+    if (!question) {
+      res.status(404).json({ error: "Question not found" });
+      return;
+    }
+
+    const answer = await prisma.answer.create({
+      data: {
+        questionId: trimmedQuestionId,
+        userId: req.userId!,
+        body: trimmedBody,
+      },
+      include: {
+        user: { select: authorSelect },
+      },
+    });
+
+    res.status(201).json({ data: { answer } });
+  } catch (error) {
+    next(error);
   }
-
-  const question = await prisma.question.findUnique({
-    where: { id: questionId.trim() },
-  });
-
-  if (!question) {
-    res.status(404).json({ error: "Question not found" });
-    return;
-  }
-
-  const answer = await prisma.answer.create({
-    data: {
-      questionId: questionId.trim(),
-      userId: req.userId!,
-      body: body.trim(),
-    },
-    include: {
-      user: { select: authorSelect },
-    },
-  });
-
-  res.status(201).json({ data: { answer } });
 });
 
 export default router;

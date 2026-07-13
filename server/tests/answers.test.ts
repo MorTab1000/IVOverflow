@@ -48,6 +48,17 @@ describe("POST /answer auth", () => {
 });
 
 describe("POST /answer", () => {
+  it("returns 400 when questionId or body is not a string", async () => {
+    const res = await request(app)
+      .post("/answer")
+      .set(authHeader)
+      .send({ questionId: 123, body: "valid body" });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: "questionId and body are required" });
+    expect(mockedPrisma.answer.create).not.toHaveBeenCalled();
+  });
+
   it("returns 400 when questionId or body is missing", async () => {
     const res = await request(app)
       .post("/answer")
