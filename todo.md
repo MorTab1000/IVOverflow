@@ -63,13 +63,19 @@
 
 ### Frontend
 
-- [ ] Login page (`/login`) with email/password form
-- [ ] Auth state in Redux (JWT storage, user info)
-- [ ] Protected route wrapper (redirect to login if no JWT)
-- [ ] Questions list page — display all questions
-- [ ] Ask Question form — title, body (with code snippet support), tags input
-- [ ] Question detail page — show question content and metadata
-- [ ] Submit question form → call `/createQuestion`
+- [x] TypeScript type contracts (`types/user.ts`, `question.ts`, `answer.ts`, `auth.ts`, `api.ts`) matching backend response shapes
+- [x] Redux store setup (`app/store.ts`, `app/hooks.ts`)
+- [x] RTK Query API layer (`api/baseApi.ts` with JWT header injection + 401 → logout, `authApi.ts`, `questionsApi.ts`)
+- [x] Reusable UI primitives (`components/ui/Button`, `TextField`, `TextArea`) with CSS Modules
+- [x] Login page (`/login`) with email/password form
+- [x] Auth state in Redux (JWT storage, user info) — `features/auth/authSlice.ts`, persisted to `localStorage`
+- [x] Protected route wrapper (redirect to login if no JWT) — `components/layout/ProtectedRoute.tsx`
+- [x] App header layout (`components/layout/AppHeader.tsx`) with logout wired; search + Ask question are Stage 1 placeholders
+- [x] `App.tsx` / `main.tsx` routing + Redux `<Provider>` wired (questions list/detail are still placeholders)
+- [ ] Questions list page — display all questions (**current**)
+- [ ] Ask Question form — title, body (with code snippet support), tags input (**current**)
+- [ ] Question detail page — show question content and metadata (**upcoming**)
+- [ ] Submit question form → call `/createQuestion` (**upcoming**)
 
 ### Acceptance
 
