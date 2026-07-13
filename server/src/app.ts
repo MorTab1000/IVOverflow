@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import answersRouter from "./routes/answers";
 import authRouter from "./routes/auth";
 import questionsRouter from "./routes/questions";
 
@@ -14,5 +15,6 @@ app.get("/health", (_req, res) => {
 
 app.use(authRouter);
 app.use(questionsRouter);
+app.use(answersRouter);
 
 export default app;

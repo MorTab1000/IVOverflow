@@ -14,6 +14,9 @@ vi.mock("../src/lib/prisma", () => ({
       findMany: vi.fn(),
       findUnique: vi.fn(),
     },
+    answer: {
+      create: vi.fn(),
+    },
   },
 }));
 

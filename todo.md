@@ -99,8 +99,8 @@
 
 - [x] Extend Prisma schema — Answer model + relations (`User` ↔ `Answer` ↔ `Question`; already in init migration — **no new migrate for Stage 2**)
 - [x] `GET /getQuestionAnswer` — already returns `answers[]` with author, ordered by `createdAt asc` (vote-score sort deferred to Stage 3)
-- [ ] `POST /answer` — JWT required; body `{ questionId, body }`; create Answer for `req.userId`; `201` → `{ data: { answer } }` with Author include; 400 if missing fields, 404 if question missing
-- [ ] Stage 2 API tests — Vitest + Supertest for `POST /answer` (mock Prisma); cover 201 / 400 / 401 / 404
+- [x] `POST /answer` — JWT required; body `{ questionId, body }`; create Answer for `req.userId`; `201` → `{ data: { answer } }` with Author include; 400 if missing fields, 404 if question missing
+- [x] Stage 2 API tests — Vitest + Supertest for `POST /answer` (mock Prisma); cover 201 / 400 / 401 / 404
 
 ### Frontend
 
