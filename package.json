@@ -13,7 +13,7 @@
     "dev:client": "npm run dev --prefix client",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
-    "prepare": "is-ci || husky",
+    "prepare": "node -e \"if(process.env.CI||process.env.HUSKY==='0')process.exit(0);const{execSync}=require('child_process');const{existsSync}=require('fs');if(!existsSync('node_modules/husky/package.json'))process.exit(0);execSync('husky',{stdio:'inherit'})\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint:staged": "lint-staged"
