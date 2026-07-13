@@ -51,16 +51,16 @@ flowchart TB
 
 ## API Endpoints (recommended by assignment)
 
-| Method | Endpoint             | Auth | Purpose                                                       |
-| ------ | -------------------- | ---- | ------------------------------------------------------------- |
-| POST   | `/login`             | No   | Authenticate user, return JWT                                 |
-| GET    | `/userInfo`          | Yes  | Validate JWT, return user profile                             |
-| GET    | `/getQuestions`      | Yes  | List questions (with tags, author)                            |
-| POST   | `/createQuestion`    | Yes  | Create new question with tags                                 |
-| GET    | `/getQuestionAnswer` | Yes  | Get single question + answers **sorted by vote score (desc)** |
-| POST   | `/answer`            | Yes  | Submit answer to a question                                   |
-| POST   | `/vote`              | Yes  | Upvote/downvote an answer                                     |
-| GET    | `/getVotes`          | Yes  | Get vote counts for answers                                   |
+| Method | Endpoint             | Auth | Purpose                                                                              |
+| ------ | -------------------- | ---- | ------------------------------------------------------------------------------------ |
+| POST   | `/login`             | No   | Authenticate user, return JWT                                                        |
+| GET    | `/userInfo`          | Yes  | Validate JWT, return user profile                                                    |
+| GET    | `/getQuestions`      | Yes  | List questions (with tags, author)                                                   |
+| POST   | `/createQuestion`    | Yes  | Create new question with tags                                                        |
+| GET    | `/getQuestionAnswer` | Yes  | Get single question + answers (Stage 2: **createdAt asc**; Stage 3: vote score desc) |
+| POST   | `/answer`            | Yes  | Submit answer to a question                                                          |
+| POST   | `/vote`              | Yes  | Upvote/downvote an answer                                                            |
+| GET    | `/getVotes`          | Yes  | Get vote counts for answers                                                          |
 
 ## Data Model
 
@@ -481,10 +481,12 @@ IVOverflow/
 
 ### Server-side answer ordering
 
-`GET /getQuestionAnswer` returns answers **sorted by vote score descending** (highest first). The server computes score per answer and applies `ORDER BY score DESC, createdAt ASC` as a tiebreaker.
+**Stage 2 (current):** `GET /getQuestionAnswer` returns answers sorted by **`createdAt ASC`** (oldest first). No vote scores are computed yet.
+
+**Stage 3 (planned):** The same endpoint will switch to **vote score descending** (highest first), with `createdAt ASC` as a tiebreaker:
 
 ```sql
--- Conceptual query shape
+-- Conceptual query shape (Stage 3)
 SELECT answer.*, COALESCE(SUM(vote.value), 0) AS score
 FROM answers
 LEFT JOIN votes ON votes.answer_id = answers.id
@@ -493,7 +495,7 @@ GROUP BY answers.id
 ORDER BY score DESC, answers.created_at ASC
 ```
 
-The frontend does **not** re-sort answers — ordering is guaranteed by the API.
+The frontend does **not** re-sort answers — ordering is guaranteed by the API for whichever stage is active.
 
 ### Vote constraint
 
@@ -509,7 +511,7 @@ The frontend does **not** re-sort answers — ordering is guaranteed by the API.
 - [x] **Git Flow:** Feature branches per stage, PR + CI before merge
 - [x] **CI:** GitHub Actions — lint + build on push/PR
 - [x] **Vote constraint:** `@@unique([userId, answerId])` — one vote per user per answer
-- [x] **Answer ordering:** Server returns answers sorted by vote score (desc)
+- [x] **Answer ordering:** Stage 2 — `createdAt ASC`; Stage 3 — vote score (desc) with `createdAt` tiebreaker
 - [x] **JWT storage:** `localStorage` — backend returns the token in the JSON body (no `Set-Cookie`), so the client must persist it itself; `localStorage` keeps the session alive across refreshes with no refresh-token endpoint to otherwise restore it
 - [x] **Frontend styling:** CSS Modules (`*.module.css`) co-located per component — zero extra dependencies, scoped class names, matches the plain wireframe aesthetic
 - [x] **Syntax highlighting:** **Prism.js** — deferred to Polish & Extras; Stages 1–3 keep plain textareas / unhighlighted `<pre>` for question and answer bodies
@@ -520,7 +522,7 @@ _None — all architectural choices for Stages 1–3 are locked. Remaining polis
 
 ## Stage 2 Backend Blueprint (Answers)
 
-> Design only — implementation starts after approval. Schema and `GET /getQuestionAnswer` already ship Answer support from Stage 1; Stage 2 adds `POST /answer` and wires the detail UI.
+Stage 2 is **shipped** on `feature/stage-2-answers`: `POST /answer`, answer UI on the question detail page, and `GET /getQuestionAnswer` returning answers with embedded `Author`. Answer ordering remains **`createdAt ASC`** until Stage 3 adds vote-score sorting.
 
 ### Prisma relations (already in `schema.prisma`)
 
@@ -564,16 +566,20 @@ Answer 1 ──* Vote     (present; unused until Stage 3)
 | Missing/invalid JWT                  | 401    | `{ error: ... }` (existing middleware)          |
 | Unexpected failure                   | 500    | `{ error: string }`                             |
 
-**Handler behavior (when implemented)**
+**Handler behavior**
 
 1. Validate `questionId` + non-empty trimmed `body`.
 2. Confirm question exists (`findUnique` / `findFirst`).
 3. `prisma.answer.create` with `userId: req.userId`, include `user: { select: authorSelect }` (same author select as questions routes).
 4. Return `201` with `{ data: { answer } }`.
 
-### `GET /getQuestionAnswer` (Stage 2 expectation)
+### `GET /getQuestionAnswer` (Stage 2 contract)
 
-Already returns `{ data: { question, answers } }` with answers ordered by `createdAt asc` and each answer including `user` (Author). Stage 2 **does not** change this contract; Stage 3 will switch ordering to vote score desc.
+Returns `{ data: { question, answers } }` with each answer including `user` (Author).
+
+**Answer ordering in Stage 2:** `createdAt ASC` (oldest first). This is the active contract while voting is not yet implemented.
+
+**Stage 3 enhancement:** The same endpoint will reorder answers by **vote score descending**, using `createdAt ASC` as a tiebreaker. The frontend will continue to render answers in server-provided order without client-side re-sorting.
 
 ## Security Notes
 
