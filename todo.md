@@ -70,22 +70,22 @@
 - [x] Login page (`/login`) with email/password form
 - [x] Auth state in Redux (JWT storage, user info) — `features/auth/authSlice.ts`, persisted to `localStorage`
 - [x] Protected route wrapper (redirect to login if no JWT) — `components/layout/ProtectedRoute.tsx`
-- [x] App header layout (`components/layout/AppHeader.tsx`) with logout wired; search + Ask question are Stage 1 placeholders
+- [x] App header layout (`components/layout/AppHeader.tsx`) with logout wired; search is still a Stage 1 placeholder
 - [x] `App.tsx` / `main.tsx` routing + Redux `<Provider>` wired
 - [x] Questions list page — display all questions (`questions-page.tsx`, `QuestionList`, `QuestionListItem`, `TagBadge`)
 - [x] Ask Question form — title, body, tags input (`AskQuestionForm`, `AskQuestionModal`, `ui/Modal`); code snippet support deferred to Polish & Extras
-- [x] "Ask question" trigger in `AppHeader` wired to the modal via `ProtectedRoute`'s `Outlet` context
+- [x] "Ask question" trigger in `AppHeader` wired to the modal, owned by `ProtectedRoute` (nearest common ancestor of the header and every routed page, so it works from `/` and `/questions/:id` alike)
 - [x] Submit question form → calls `/createQuestion` (`useCreateQuestionMutation`), list auto-refetches via RTK Query tag invalidation
-- [ ] Question detail page — show question content and metadata (**current**)
+- [x] Question detail page — show question content and metadata (`question-detail-page.tsx`); answers/voting UI deferred to Stage 2/3 with an explicit in-page note
 
 ### Acceptance
 
 - [x] `docker compose up -d` starts Postgres; `prisma migrate` + `prisma db seed` succeed
 - [ ] CI pipeline passes on PR
 - [x] User can log in with seeded credentials (API verified)
-- [ ] JWT is sent on all API requests (backend ready; pending frontend)
+- [x] JWT is sent on all API requests (`baseApi.ts` `prepareHeaders` attaches it to every RTK Query call)
 - [x] User can create a question with tags (API verified)
-- [ ] Questions appear on list and detail pages (pending frontend)
+- [x] Questions appear on list and detail pages
 
 ---
 

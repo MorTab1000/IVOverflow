@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import LoginPage from "./pages/login-page";
+import QuestionDetailPage from "./pages/question-detail-page";
 import QuestionsPage from "./pages/questions-page";
 
 export default function App() {
@@ -11,8 +12,7 @@ export default function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<QuestionsPage />} />
-          {/* Replaced with question-detail-page.tsx in Step 6 */}
-          <Route path="/questions/:id" element={<div>Question Detail Placeholder</div>} />
+          <Route path="/questions/:id" element={<QuestionDetailPage />} />
         </Route>
 
         <Route path="*" element={<div>Page not found</div>} />
