@@ -3,7 +3,11 @@ import Button from "../ui/Button";
 import { logout, selectCurrentUser } from "../../features/auth/authSlice";
 import styles from "./AppHeader.module.css";
 
-export default function AppHeader() {
+export interface AppHeaderProps {
+  onAskQuestion: () => void;
+}
+
+export default function AppHeader({ onAskQuestion }: AppHeaderProps) {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
 
@@ -25,8 +29,7 @@ export default function AppHeader() {
       />
 
       <div className={styles.actions}>
-        {/* Placeholder — opens AskQuestionModal once it exists (Step 5) */}
-        <Button type="button" disabled className={styles.askButton}>
+        <Button type="button" onClick={onAskQuestion} className={styles.askButton}>
           Ask question
         </Button>
 

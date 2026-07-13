@@ -1,0 +1,17 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formError {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #d64545;
+}
+
+.submitButton {
+  align-self: center;
+  min-width: 8rem;
+  margin-top: 0.25rem;
+}

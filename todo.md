@@ -71,11 +71,12 @@
 - [x] Auth state in Redux (JWT storage, user info) — `features/auth/authSlice.ts`, persisted to `localStorage`
 - [x] Protected route wrapper (redirect to login if no JWT) — `components/layout/ProtectedRoute.tsx`
 - [x] App header layout (`components/layout/AppHeader.tsx`) with logout wired; search + Ask question are Stage 1 placeholders
-- [x] `App.tsx` / `main.tsx` routing + Redux `<Provider>` wired (questions list/detail are still placeholders)
-- [ ] Questions list page — display all questions (**current**)
-- [ ] Ask Question form — title, body (with code snippet support), tags input (**current**)
-- [ ] Question detail page — show question content and metadata (**upcoming**)
-- [ ] Submit question form → call `/createQuestion` (**upcoming**)
+- [x] `App.tsx` / `main.tsx` routing + Redux `<Provider>` wired
+- [x] Questions list page — display all questions (`questions-page.tsx`, `QuestionList`, `QuestionListItem`, `TagBadge`)
+- [x] Ask Question form — title, body, tags input (`AskQuestionForm`, `AskQuestionModal`, `ui/Modal`); code snippet support deferred to Polish & Extras
+- [x] "Ask question" trigger in `AppHeader` wired to the modal via `ProtectedRoute`'s `Outlet` context
+- [x] Submit question form → calls `/createQuestion` (`useCreateQuestionMutation`), list auto-refetches via RTK Query tag invalidation
+- [ ] Question detail page — show question content and metadata (**current**)
 
 ### Acceptance
 
